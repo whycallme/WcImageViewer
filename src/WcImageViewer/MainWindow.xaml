@@ -1,0 +1,114 @@
+﻿<Window x:Class="WcImageViewer.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:WcImageViewer.Controls"
+        Title="WC Image Viewer"
+        Height="600"
+        Width="800"
+        MinHeight="600"
+        MinWidth="800"
+        Icon="/Assets/app.ico"
+        Background="{StaticResource WindowBackgroundBrush}"
+        WindowStartupLocation="CenterScreen"
+        AllowDrop="True"
+        Drop="OnDrop"
+        DragOver="OnDragOver"
+        PreviewKeyDown="OnPreviewKeyDown"
+        PreviewMouseMove="OnPreviewMouseMove"
+        PreviewMouseLeftButtonUp="OnPreviewMouseLeftButtonUp"
+        MouseLeave="OnMouseLeave">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Border x:Name="ToolbarBorder"
+                Grid.Row="0"
+                Background="#252526"
+                BorderBrush="#333336"
+                BorderThickness="0,0,0,1"
+                Padding="8,6">
+            <DockPanel>
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                    <Button Content="파일 열기" Click="OnOpenFileClick" />
+                    <Button Content="폴더 열기" Click="OnOpenFolderClick" />
+                    <Border Width="1" Background="#3A3A3D" Margin="4,2,10,2" />
+                    <Button Content="◀" Click="OnPrevClick" ToolTip="이전 (←)" />
+                    <Button Content="▶" Click="OnNextClick" ToolTip="다음 (→)" />
+                    <Button Content="맞춤" Click="OnFitClick" ToolTip="창에 맞춤 (0)" />
+                    <Button Content="100%" Click="OnActualSizeClick" ToolTip="실제 크기 (1)" />
+                    <TextBox x:Name="ZoomBox"
+                             Width="64"
+                             Height="26"
+                             Margin="0,0,6,0"
+                             Background="#2A2A2C"
+                             Foreground="#E8E8E8"
+                             BorderBrush="#4A4A4E"
+                             BorderThickness="1"
+                             Padding="4,2"
+                             FontSize="12"
+                             TextAlignment="Center"
+                             VerticalContentAlignment="Center"
+                             ToolTip="표시 배율 (예: 100%)"
+                             KeyDown="OnZoomKeyDown"
+                             LostFocus="OnZoomLostFocus" />
+                    <Button Content="창 맞춤" Click="OnFitWindowClick" ToolTip="이미지 크기에 창 맞춤 (W)" />
+                    <Button x:Name="SlideshowButton" Content="슬라이드" Click="OnSlideshowClick" ToolTip="슬라이드쇼 (S)" />
+                    <Button x:Name="RecentButton" Content="최근" Click="OnRecentClick" />
+                    <Button Content="설정" Click="OnSettingsClick" />
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <Grid Grid.Row="1">
+            <controls:ZoomPanControl x:Name="Viewer" />
+            <TextBlock x:Name="EmptyText"
+                       Text="이미지를 열어주세요&#10;파일을 끌어다 놓아도 됩니다"
+                       Foreground="#777777"
+                       FontSize="16"
+                       TextAlignment="Center"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       IsHitTestVisible="False" />
+            <TextBlock x:Name="InfoOverlayText"
+                       Panel.ZIndex="5"
+                       HorizontalAlignment="Left"
+                       VerticalAlignment="Top"
+                       Margin="14"
+                       MaxWidth="760"
+                       Foreground="#F2F2F2"
+                       FontSize="12"
+                       TextWrapping="Wrap"
+                       IsHitTestVisible="False"
+                       Visibility="Collapsed">
+                <TextBlock.Effect>
+                    <DropShadowEffect Color="#000000" BlurRadius="6" ShadowDepth="0" Opacity="0.9" />
+                </TextBlock.Effect>
+            </TextBlock>
+            <Border x:Name="NoticeBorder"
+                    Panel.ZIndex="20"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Background="#CC000000"
+                    CornerRadius="4"
+                    Padding="24,10"
+                    IsHitTestVisible="False"
+                    Visibility="Collapsed"
+                    Opacity="0">
+                <Border.Effect>
+                    <DropShadowEffect Color="#000000" BlurRadius="10" ShadowDepth="0" Opacity="0.8" />
+                </Border.Effect>
+                <TextBlock x:Name="NoticeText"
+                           Foreground="#FFFFFF"
+                           FontSize="20"
+                           FontWeight="SemiBold"
+                           TextAlignment="Center" />
+            </Border>
+            <controls:ThumbnailStrip x:Name="Thumbnails"
+                                      VerticalAlignment="Bottom"
+                                      Panel.ZIndex="10" />
+        </Grid>
+
+    </Grid>
+</Window>

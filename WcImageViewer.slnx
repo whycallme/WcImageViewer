@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/WcImageViewer/WcImageViewer.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/WcImageViewer.Tests/WcImageViewer.Tests.csproj" />
+  </Folder>
+</Solution>
