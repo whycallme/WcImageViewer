@@ -19,5 +19,12 @@
                 <MatrixTransform x:Name="ImageTransform" />
             </Image.RenderTransform>
         </Image>
+        <Canvas x:Name="TileCanvas"
+                IsHitTestVisible="False"
+                RenderTransformOrigin="0,0">
+            <Canvas.RenderTransform>
+                <MatrixTransform x:Name="TileTransform" />
+            </Canvas.RenderTransform>
+        </Canvas>
     </Canvas>
 </UserControl>

@@ -6,7 +6,8 @@ public static class ImageFileEnumerator
 {
     private static readonly HashSet<string> Extensions = new(StringComparer.OrdinalIgnoreCase)
     {
-        ".jpg", ".jpeg", ".jpe", ".png", ".bmp", ".gif", ".tif", ".tiff", ".ico"
+        ".jpg", ".jpeg", ".jpe", ".png", ".bmp", ".gif", ".tif", ".tiff", ".ico",
+        ".webp", ".avif", ".heic", ".heif"
     };
 
     public static bool IsImage(string path) => Extensions.Contains(Path.GetExtension(path));

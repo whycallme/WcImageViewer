@@ -36,6 +36,7 @@ public partial class SettingsWindow : Window
         bool thumbnailsVisible,
         int defaultZoomPercent,
         bool autoFitWindowToImage,
+        bool doNotUpscaleSmallImages,
         bool confirmDelete,
         bool useRecycleBin,
         string editorPath,
@@ -73,6 +74,7 @@ public partial class SettingsWindow : Window
 
         ThumbnailsCheck.IsChecked = thumbnailsVisible;
         AutoFitCheck.IsChecked = autoFitWindowToImage;
+        NoUpscaleCheck.IsChecked = doNotUpscaleSmallImages;
         ConfirmDeleteCheck.IsChecked = confirmDelete;
         RecycleBinCheck.IsChecked = useRecycleBin;
         EditorPathBox.Text = editorPath;
@@ -105,6 +107,8 @@ public partial class SettingsWindow : Window
     public int DefaultZoomPercent { get; private set; }
 
     public bool AutoFitWindowToImage { get; private set; } = true;
+
+    public bool DoNotUpscaleSmallImages { get; private set; } = true;
 
     public bool ConfirmDelete { get; private set; } = true;
 
@@ -402,6 +406,7 @@ public partial class SettingsWindow : Window
             ? _zoomChoices[DefaultZoomBox.SelectedIndex].Percent
             : 0;
         AutoFitWindowToImage = AutoFitCheck.IsChecked == true;
+        DoNotUpscaleSmallImages = NoUpscaleCheck.IsChecked == true;
         ConfirmDelete = ConfirmDeleteCheck.IsChecked == true;
         UseRecycleBin = RecycleBinCheck.IsChecked == true;
         EditorPath = EditorPathBox.Text.Trim();

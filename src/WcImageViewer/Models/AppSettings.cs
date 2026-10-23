@@ -15,6 +15,7 @@ public sealed class AppSettings
     public bool SlideshowRandom { get; set; }
     public int DefaultZoomPercent { get; set; }
     public bool AutoFitWindowToImage { get; set; } = true;
+    public bool DoNotUpscaleSmallImages { get; set; } = true;
     public bool ConfirmDelete { get; set; } = true;
     public bool UseRecycleBin { get; set; } = true;
     public string EditorPath { get; set; } = string.Empty;

@@ -32,6 +32,7 @@ ACCENTS = {
     ".jpg": "#2F7DF6", ".jpeg": "#2F7DF6", ".jpe": "#2F7DF6",
     ".png": "#1FA36B", ".bmp": "#8A63D2", ".gif": "#E0559B",
     ".tif": "#12A6A6", ".tiff": "#12A6A6", ".ico": "#5B6B7F",
+    ".webp": "#2FA8E0", ".avif": "#8E44D0", ".heic": "#2E9BD6", ".heif": "#2E9BD6",
     ".zip": "#E39A2D", ".cbz": "#E39A2D", ".7z": "#E39A2D", ".cb7": "#E39A2D",
     ".rar": "#C96A38", ".cbr": "#C96A38",
 }
@@ -461,7 +462,7 @@ def write_gallery():
   </header>
   <div class="grid">{card_html}
   </div>
-  <footer>선택한 시안으로 앱 아이콘(.ico)과 15개 확장자 아이콘을 만들고, exe·창·파일 연결에 적용합니다.</footer>
+  <footer>선택한 시안으로 앱 아이콘(.ico)과 확장자 아이콘을 만들고, exe·창·파일 연결에 적용합니다.</footer>
 </body>
 </html>"""
     with open(os.path.join(OUT, "gallery.html"), "w", encoding="utf-8") as handle:

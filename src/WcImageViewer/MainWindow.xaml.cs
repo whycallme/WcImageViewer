@@ -70,6 +70,7 @@ public partial class MainWindow : Window
         _shortcuts = ShortcutService.GetEffective(_settings.Shortcuts);
 
         InitializeComponent();
+        Viewer.AllowUpscaleOnFit = !_settings.DoNotUpscaleSmallImages;
         ApplySettings();
 
         Viewer.ZoomChanged += (_, _) => UpdateZoomText();
@@ -329,8 +330,11 @@ public partial class MainWindow : Window
         try
         {
             using var stream = await source.OpenEntryAsync(_index, cancellationToken);
+            var reopen = source is FolderImageSource
+                ? (Func<Stream>)(() => ImageLoader.OpenFile(entry.Key))
+                : null;
             var document = await Task.Run(
-                () => ImageLoader.LoadDocument(stream, cancellationToken),
+                () => ImageLoader.LoadDocument(stream, reopen, Path.GetExtension(entry.Name), cancellationToken),
                 cancellationToken);
 
             if (generation != _loadGeneration || !ReferenceEquals(source, _source))
@@ -373,7 +377,7 @@ public partial class MainWindow : Window
         var entry = _source.GetEntry(_index);
         var dimensions = _document is null
             ? string.Empty
-            : $" ({_document.Image.PixelWidth}x{_document.Image.PixelHeight})";
+            : $" ({_document.PixelWidth}x{_document.PixelHeight})";
         Title = $"{entry.DisplayName} [{_index + 1}/{_source.Count}]{dimensions}";
     }
 
@@ -381,7 +385,7 @@ public partial class MainWindow : Window
     {
         StopAnimation();
         _document = document;
-        Viewer.SetImage(document.Image);
+        Viewer.SetImage(document.Image, document.Tiles);
 
         if (!_isFullscreen && _settings.AutoFitWindowToImage)
         {
@@ -447,8 +451,11 @@ public partial class MainWindow : Window
         try
         {
             using var stream = await source.OpenEntryAsync(index, cancellationToken);
+            var reopen = source is FolderImageSource
+                ? (Func<Stream>)(() => ImageLoader.OpenFile(entry.Key))
+                : null;
             var document = await Task.Run(
-                () => ImageLoader.LoadDocument(stream, cancellationToken),
+                () => ImageLoader.LoadDocument(stream, reopen, Path.GetExtension(entry.Name), cancellationToken),
                 cancellationToken);
 
             if (ReferenceEquals(source, _source) && !cancellationToken.IsCancellationRequested)
@@ -495,9 +502,32 @@ public partial class MainWindow : Window
             return;
         }
 
-        _frameIndex = (_frameIndex + 1) % _document.Frames.Count;
-        Viewer.SetFrame(_document.Frames[_frameIndex]);
-        _animationTimer.Interval = GetDelay(_document, _frameIndex);
+        _frameIndex = (_frameIndex + 1) % _document.FrameCount;
+
+        BitmapSource frame;
+        var started = Stopwatch.GetTimestamp();
+        try
+        {
+            frame = _document.GetFrame(_frameIndex);
+        }
+        catch
+        {
+            _animationTimer.Stop();
+            return;
+        }
+
+        Viewer.SetFrame(frame);
+
+        var decodeTime = Stopwatch.GetElapsedTime(started);
+        var interval = GetDelay(_document, _frameIndex) - decodeTime;
+        _animationTimer.Interval = interval < TimeSpan.FromMilliseconds(1)
+            ? TimeSpan.FromMilliseconds(1)
+            : interval;
+
+        if (InfoOverlayText.Visibility == Visibility.Visible)
+        {
+            UpdateInfoText();
+        }
     }
 
     private static TimeSpan GetDelay(ImageDocument document, int index)
@@ -800,8 +830,8 @@ public partial class MainWindow : Window
         var minViewportWidth = Math.Max(1, MinWidth - chromeWidth);
         var minViewportHeight = Math.Max(1, MinHeight - chromeHeight);
 
-        var imageWidth = _document.Image.PixelWidth;
-        var imageHeight = _document.Image.PixelHeight;
+        var imageWidth = _document.PixelWidth;
+        var imageHeight = _document.PixelHeight;
 
         double scale;
         if (imageWidth > workViewportWidth || imageHeight > workViewportHeight)
@@ -824,6 +854,11 @@ public partial class MainWindow : Window
         }
 
         scale = Math.Clamp(scale, 0.01, 8.0);
+
+        if (_settings.DoNotUpscaleSmallImages)
+        {
+            scale = Math.Min(scale, 1.0);
+        }
 
         var displayedWidth = imageWidth * scale;
         var displayedHeight = imageHeight * scale;
@@ -1006,8 +1041,8 @@ public partial class MainWindow : Window
 
         var frame = _document.IsAnimated &&
                     _frameIndex >= 0 &&
-                    _frameIndex < _document.Frames.Count
-            ? _document.Frames[_frameIndex]
+                    _frameIndex < _document.FrameCount
+            ? _document.GetFrame(_frameIndex)
             : _document.Image;
 
         var extension = Path.GetExtension(dialog.FileName).ToLowerInvariant();
@@ -1132,11 +1167,20 @@ public partial class MainWindow : Window
 
         if (_document is not null)
         {
-            var image = _document.Image;
-            builder.AppendLine($"{image.PixelWidth} × {image.PixelHeight} px");
-            if (image.DpiX > 0 && image.DpiY > 0)
+            builder.AppendLine($"{_document.PixelWidth} × {_document.PixelHeight} px");
+            if (_document.DpiX > 0 && _document.DpiY > 0)
             {
-                builder.AppendLine($"DPI  {image.DpiX:0.#} × {image.DpiY:0.#}");
+                builder.AppendLine($"DPI  {_document.DpiX:0.#} × {_document.DpiY:0.#}");
+            }
+
+            if (_document.IsAnimated && _frameIndex >= 0 && _frameIndex < _document.FrameCount)
+            {
+                builder.AppendLine($"프레임  {_frameIndex + 1}/{_document.FrameCount}");
+            }
+
+            if (_document.IsTiled)
+            {
+                builder.AppendLine("표시  타일 디코딩 (원본 100%)");
             }
         }
 
@@ -1189,8 +1233,8 @@ public partial class MainWindow : Window
 
         var frame = _document.IsAnimated &&
                     _frameIndex >= 0 &&
-                    _frameIndex < _document.Frames.Count
-            ? _document.Frames[_frameIndex]
+                    _frameIndex < _document.FrameCount
+            ? _document.GetFrame(_frameIndex)
             : _document.Image;
 
         try
@@ -1471,6 +1515,7 @@ public partial class MainWindow : Window
             _thumbnailsVisible,
             _settings.DefaultZoomPercent,
             _settings.AutoFitWindowToImage,
+            _settings.DoNotUpscaleSmallImages,
             _settings.ConfirmDelete,
             _settings.UseRecycleBin,
             _settings.EditorPath,
@@ -1501,6 +1546,8 @@ public partial class MainWindow : Window
         _thumbnailsVisible = dialog.ShowThumbnails;
         _settings.DefaultZoomPercent = dialog.DefaultZoomPercent;
         _settings.AutoFitWindowToImage = dialog.AutoFitWindowToImage;
+        _settings.DoNotUpscaleSmallImages = dialog.DoNotUpscaleSmallImages;
+        Viewer.AllowUpscaleOnFit = !_settings.DoNotUpscaleSmallImages;
         _settings.ConfirmDelete = dialog.ConfirmDelete;
         _settings.UseRecycleBin = dialog.UseRecycleBin;
         _settings.EditorPath = dialog.EditorPath;
@@ -1607,7 +1654,7 @@ public partial class MainWindow : Window
         var dialog = new OpenFileDialog
         {
             Title = "이미지 또는 압축파일 열기",
-            Filter = "이미지/압축 파일|*.jpg;*.jpeg;*.jpe;*.png;*.bmp;*.gif;*.tif;*.tiff;*.ico;*.zip;*.cbz;*.7z;*.cb7;*.rar;*.cbr|모든 파일|*.*"
+            Filter = "이미지/압축 파일|*.jpg;*.jpeg;*.jpe;*.png;*.bmp;*.gif;*.tif;*.tiff;*.ico;*.webp;*.avif;*.heic;*.heif;*.zip;*.cbz;*.7z;*.cb7;*.rar;*.cbr|모든 파일|*.*"
         };
 
         if (dialog.ShowDialog(this) == true)

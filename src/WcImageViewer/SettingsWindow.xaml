@@ -161,6 +161,17 @@
                               Foreground="#E8E8E8"
                               Margin="0,12,0,0" />
 
+                    <CheckBox x:Name="NoUpscaleCheck"
+                              Content="작은 이미지는 확대하지 않음"
+                              Foreground="#E8E8E8"
+                              Margin="0,10,0,0"
+                              ToolTip="창에 맞춤을 사용해도 최소 창 크기보다 작은 이미지를 100%로 표시합니다." />
+
+                    <TextBlock Text="최소 창 크기(800×600)보다 작은 이미지를 원본 크기로 표시합니다."
+                               Foreground="#777777"
+                               TextWrapping="Wrap"
+                               Margin="0,8,0,0" />
+
                     <Grid Margin="0,20,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />

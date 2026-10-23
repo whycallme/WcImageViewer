@@ -17,7 +17,8 @@ public static class FileAssociationService
 
     public static IReadOnlyList<string> ImageExtensions { get; } = new[]
     {
-        ".jpg", ".jpeg", ".jpe", ".png", ".bmp", ".gif", ".tif", ".tiff", ".ico"
+        ".jpg", ".jpeg", ".jpe", ".png", ".bmp", ".gif", ".tif", ".tiff", ".ico",
+        ".webp", ".avif", ".heic", ".heif"
     };
 
     public static IReadOnlyList<string> ArchiveExtensions { get; } = new[]

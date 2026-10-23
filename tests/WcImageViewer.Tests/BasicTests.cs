@@ -50,7 +50,10 @@ public class ImageFileEnumeratorTests
     [Theory]
     [InlineData("photo.JPG", true)]
     [InlineData("photo.jpeg", true)]
-    [InlineData("photo.webp", false)]
+    [InlineData("photo.webp", true)]
+    [InlineData("photo.avif", true)]
+    [InlineData("photo.heic", true)]
+    [InlineData("photo.heif", true)]
     [InlineData("photo.txt", false)]
     public void RecognizesSupportedExtensions(string name, bool expected)
     {

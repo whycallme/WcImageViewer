@@ -38,6 +38,7 @@ public sealed class ImageDocumentCache
         {
             if (_map.TryGetValue(key, out var existing))
             {
+                existing.Value.Document.Dispose();
                 existing.Value = new Entry(key, document);
                 _lru.Remove(existing);
                 _lru.AddFirst(existing);
@@ -57,6 +58,7 @@ public sealed class ImageDocumentCache
 
                 _lru.RemoveLast();
                 _map.Remove(last.Value.Key);
+                last.Value.Document.Dispose();
             }
         }
     }
@@ -65,6 +67,11 @@ public sealed class ImageDocumentCache
     {
         lock (_gate)
         {
+            foreach (var entry in _lru)
+            {
+                entry.Document.Dispose();
+            }
+
             _map.Clear();
             _lru.Clear();
         }

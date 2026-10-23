@@ -20,6 +20,7 @@ public class SettingsServiceTests
             service.Settings.ThumbnailsVisible = false;
             service.Settings.DefaultZoomPercent = 120;
             service.Settings.AutoFitWindowToImage = false;
+            service.Settings.DoNotUpscaleSmallImages = false;
             service.Settings.ConfirmDelete = false;
             service.Settings.UseRecycleBin = false;
             service.Settings.WrapNavigation = false;
@@ -42,6 +43,7 @@ public class SettingsServiceTests
             Assert.Equal(120, loaded.Settings.DefaultZoomPercent);
             Assert.False(loaded.Settings.FitWindowToImage);
             Assert.False(loaded.Settings.AutoFitWindowToImage);
+            Assert.False(loaded.Settings.DoNotUpscaleSmallImages);
             Assert.False(loaded.Settings.ConfirmDelete);
             Assert.False(loaded.Settings.UseRecycleBin);
             Assert.False(loaded.Settings.WrapNavigation);
@@ -73,6 +75,7 @@ public class SettingsServiceTests
             Assert.True(service.Settings.ShowNavigationNotice);
             Assert.True(service.Settings.SlideshowRepeat);
             Assert.False(service.Settings.SlideshowRandom);
+            Assert.True(service.Settings.DoNotUpscaleSmallImages);
         }
         finally
         {

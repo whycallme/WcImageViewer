@@ -17,6 +17,7 @@
 | 런타임 | .NET 10 LTS (`net10.0-windows`) |
 | UI | WPF + XAML, CommunityToolkit.Mvvm |
 | 이미지 디코딩 | WPF `BitmapImage` / `BitmapDecoder` (내부적으로 WIC 사용) |
+| WebP 애니메이션 | **Imazen.WebP** (libwebp, MIT) — 긴 애니메이션 프레임 지연 디코딩 |
 | 압축파일 | **SharpCompress** (MIT, ZIP/7Z/RAR 읽기) |
 | 설정 | `System.Text.Json` |
 | 테스트 | xUnit |
@@ -120,7 +121,11 @@ src/WcImageViewer/
     FolderImageSource.cs          폴더 열거 + 자연 정렬
     ArchiveImageSource.cs         ZIP/7Z/RAR 엔트리 목록·스트림
     ArchiveSupport.cs             압축 해제 제한·보안
-    ImageLoader.cs                이미지/EXIF/GIF 프레임 디코딩
+    ImageLoader.cs                이미지/EXIF/GIF·WebP 프레임 디코딩
+    GifCompositor.cs              GIF 투명 프레임·disposal 합성
+    WebPAnimation.cs              애니메이션 WebP 프레임 지연(ANMF) 파싱
+    WebPFrameSource.cs            긴 애니메이션 WebP의 libwebp 지연 디코딩
+    TiledImageSource.cs           100MP 초과 이미지의 레벨별 타일 디코딩
     ImageFileEnumerator.cs        지원 확장자 판별
     ImageDocumentCache.cs         현재 이미지 LRU 캐시
     ThumbnailCache.cs             메모리 LRU
@@ -205,7 +210,7 @@ WPF 세부:
 | SharpCompress RAR/7Z 예외 | 소형 코퍼스로 검증, 암호·멀티볼륨은 명확한 오류 후 v0.2 |
 | 고체 압축 해제 시간·디스크 | 이미지 엔트리만 추출, 진행률/취소, 2GB 캐시 제한 |
 | 압축 폭탄·경로 traversal | 엔트리 수/크기/총량 제한, 파일명만 사용, 제한 스트림 |
-| 큰 이미지 렌더링 | 미리보기 우선, 원본 1장만, 100MP 초과는 v0.2 타일링 |
+| 큰 이미지 렌더링 | 미리보기 우선, 100MP 초과는 512px 타일 디코딩·32타일 LRU로 제한 |
 | GIF 타이밍/디스posal | 실제 GIF 코퍼스로 수동 검증, 프레임 메모리 상한 |
 | High-DPI | Per-Monitor V2 매니페스트, 150%/200% 수동 테스트 |
 | 코드 서명 비용 | 초기 미서명 배포, 정식 배포 전 인증서 확보 |
@@ -226,7 +231,7 @@ WPF 세부:
 
 1. 시작/메모리 프로파일링, 대형 이미지 미리보기 최적화
 2. Inno Setup 설치본과 코드 서명 준비
-3. WebP/AVIF/HEIC와 대형 이미지 타일링(v0.2)
+3. TIFF 다페이지, ICC 색 관리, 애니메이션 AVIF
 
 ---
 
@@ -261,9 +266,21 @@ WPF 세부:
 - [x] 설정 저장(창 상태, 최근 항목, 썸네일 고정, 슬라이드 간격·반복·랜덤, 기본 배율, 이미지 열 때 창 맞춤, 파일 끝 이동·경계 알림, 삭제 확인/휴지통)
 - [x] 최근 항목 메뉴, 설정 창(Ctrl+,)
 - [x] portable/lite publish 프로파일과 `scripts/publish.ps1`
-- [x] 테스트 22개 통과 (GIF 프레임/딜레이, EXIF 회전, ZIP/7Z 디코딩, 설정 저장·마이그레이션, 단축키 파싱 포함)
+- [x] 테스트 49개 통과 (GIF·WebP 프레임/딜레이, GIF 투명 프레임 합성, EXIF 회전, ZIP/7Z 디코딩, 설정 저장·마이그레이션, 단축키 파싱, 타일 디코딩·회전, 맞춤 배율 포함)
 - [x] RAR 실물 샘플 수동 검증
 - [x] portable/lite 게시 실행 확인 (portable 약 66MB, lite 약 4MB)
+- [x] WebP/AVIF/HEIC/HEIF 확장자 등록, WIC 코덱 안내 메시지
+- [x] 애니메이션 WebP 재생 (WIC 메타데이터 + ANMF 지연 파싱, libwebp 지연 프레임 디코딩)
+- [x] GIF 투명 프레임·disposal 합성 (WIC 프레임을 이전 캔버스 위에 누적)
+- [x] 작은 이미지를 창에 맞춰 확대하지 않는 설정 (기본 켜짐)
+- [x] 100MP 초과 이미지 타일 디코딩 (미리보기 + 512px 타일, 레벨 -2, 32타일 LRU)
 - [ ] 시작/메모리 프로파일링, 대형 이미지 미리보기 최적화
 - [ ] Inno Setup 설치본, 코드 서명
-- [ ] WebP/AVIF/HEIC, 100MP 초과 타일링(v0.2)
+
+> WebP/AVIF/HEIC/HEIF는 OS의 WIC 코덱을 사용한다. 코덱이 없으면 해당 확장자에 한해 Microsoft Store 확장 설치 안내를 표시한다. HEIC/HEIF는 HEIF 이미지 확장과 HEVC 비디오 확장이 모두 필요하다.
+
+### v0.2.0 릴리즈 (2026-10-23)
+
+- 범위: WebP/AVIF/HEIC/HEIF, 애니메이션 WebP, GIF 투명 프레임 합성, 100MP 초과 타일링, 프레임 카운터, 작은 이미지 확대 옵션
+- 릴리즈 노트: `docs/releases/v0.2.0.md`
+- 다음 릴리즈(v1.0) 후보: Inno Setup 설치본, 코드 서명, 시작/메모리 프로파일링, TIFF 다페이지·ICC·애니메이션 AVIF

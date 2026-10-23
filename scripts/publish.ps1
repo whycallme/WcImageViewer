@@ -10,9 +10,20 @@ $publish = Join-Path $root "publish"
 dotnet publish $project -c $Configuration -p:PublishProfile=portable
 dotnet publish $project -c $Configuration -p:PublishProfile=lite
 
-Compress-Archive -Path (Join-Path $publish "portable\WcImageViewer.exe") `
+$portableFiles = @(
+    (Join-Path $publish "portable\WcImageViewer.exe"),
+    (Join-Path $root "LICENSE"),
+    (Join-Path $root "THIRD-PARTY-NOTICES.md")
+)
+$liteFiles = @(
+    (Join-Path $publish "lite\WcImageViewer.exe"),
+    (Join-Path $root "LICENSE"),
+    (Join-Path $root "THIRD-PARTY-NOTICES.md")
+)
+
+Compress-Archive -Path $portableFiles `
     -DestinationPath (Join-Path $publish "WcImageViewer-portable-win-x64.zip") -Force
-Compress-Archive -Path (Join-Path $publish "lite\WcImageViewer.exe") `
+Compress-Archive -Path $liteFiles `
     -DestinationPath (Join-Path $publish "WcImageViewer-lite-win-x64.zip") -Force
 
 Get-ChildItem $publish | Select-Object Name, Length
