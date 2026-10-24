@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
+using WcImageViewer.Services;
 
 namespace WcImageViewer;
 
@@ -12,6 +13,7 @@ public partial class BookmarkWindow : Window
     public BookmarkWindow(IEnumerable<string> bookmarks, string? currentPath)
     {
         InitializeComponent();
+        SourceInitialized += (_, _) => WindowCornerService.Apply(this);
 
         _bookmarks = new ObservableCollection<string>(
             bookmarks

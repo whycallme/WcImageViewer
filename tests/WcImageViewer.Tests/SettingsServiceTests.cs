@@ -25,6 +25,7 @@ public class SettingsServiceTests
             service.Settings.UseRecycleBin = false;
             service.Settings.WrapNavigation = false;
             service.Settings.ShowNavigationNotice = false;
+            service.Settings.Theme = "Light";
             service.Settings.EditorPath = @"C:\Tools\editor.exe";
             service.Settings.AssociatedExtensions = new List<string> { ".jpg", ".png" };
             service.Settings.SingleWindowMode = true;
@@ -48,6 +49,7 @@ public class SettingsServiceTests
             Assert.False(loaded.Settings.UseRecycleBin);
             Assert.False(loaded.Settings.WrapNavigation);
             Assert.False(loaded.Settings.ShowNavigationNotice);
+            Assert.Equal("Light", loaded.Settings.Theme);
             Assert.Equal(@"C:\Tools\editor.exe", loaded.Settings.EditorPath);
             Assert.Equal(new[] { ".jpg", ".png" }, loaded.Settings.AssociatedExtensions);
             Assert.False(loaded.Settings.AssociateFileTypes);
@@ -76,6 +78,7 @@ public class SettingsServiceTests
             Assert.True(service.Settings.SlideshowRepeat);
             Assert.False(service.Settings.SlideshowRandom);
             Assert.True(service.Settings.DoNotUpscaleSmallImages);
+            Assert.Equal("Dark", service.Settings.Theme);
         }
         finally
         {

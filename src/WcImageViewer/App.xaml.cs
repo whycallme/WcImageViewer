@@ -18,6 +18,8 @@ public partial class App : Application
         _ = Task.Run(() => ArchiveCache.CleanupOld(TimeSpan.FromDays(7)));
 
         var settingsService = SettingsService.LoadDefault();
+        ThemeService.Apply(ThemeService.Parse(settingsService.Settings.Theme));
+        ThemeService.ThemeChanged += OnThemeChanged;
 
         if (settingsService.Settings.SingleWindowMode)
         {
@@ -81,9 +83,15 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        ThemeService.ThemeChanged -= OnThemeChanged;
         _singleInstance?.Dispose();
         _singleInstance = null;
         base.OnExit(e);
+    }
+
+    private static void OnThemeChanged(object? sender, EventArgs e)
+    {
+        WindowCornerService.ApplyToAllWindows();
     }
 
     private static void RefreshFileAssociations(AppSettings settings)

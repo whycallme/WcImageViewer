@@ -162,6 +162,9 @@ public sealed class SettingsService
         }
 
         settings.AssociateFileTypes = false;
+        settings.Theme = string.Equals(settings.Theme, "Light", StringComparison.OrdinalIgnoreCase)
+            ? "Light"
+            : "Dark";
         settings.Shortcuts ??= new Dictionary<string, string>();
         settings.Bookmarks ??= new List<string>();
         settings.SlideshowIntervalSeconds = Math.Clamp(settings.SlideshowIntervalSeconds, 2, 60);

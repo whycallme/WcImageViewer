@@ -1,7 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
 using Microsoft.Win32;
 using WcImageViewer.Services;
 
@@ -26,8 +25,10 @@ public partial class SettingsWindow : Window
     private readonly Dictionary<string, TextBox> _shortcutBoxes = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Button> _shortcutButtons = new(StringComparer.Ordinal);
     private readonly Dictionary<string, string> _shortcutGestures;
+    private readonly AppTheme _originalTheme;
     private string? _capturingActionId;
     private bool _initializing = true;
+    private bool _themeAccepted;
 
     public SettingsWindow(
         int slideshowIntervalSeconds,
@@ -44,9 +45,14 @@ public partial class SettingsWindow : Window
         bool singleWindowMode,
         bool wrapNavigation,
         bool showNavigationNotice,
-        IReadOnlyDictionary<string, string> shortcuts)
+        IReadOnlyDictionary<string, string> shortcuts,
+        string theme)
     {
         InitializeComponent();
+        SourceInitialized += (_, _) => WindowCornerService.Apply(this);
+
+        _originalTheme = ThemeService.Parse(theme);
+        Theme = ThemeService.ToSetting(_originalTheme);
 
         var intervals = Intervals.ToList();
         if (!intervals.Contains(slideshowIntervalSeconds))
@@ -91,6 +97,9 @@ public partial class SettingsWindow : Window
         _shortcutGestures = ShortcutService.GetEffective(shortcuts);
         BuildShortcutRows();
 
+        ThemeBox.ItemsSource = new[] { "다크", "라이트" };
+        ThemeBox.SelectedIndex = _originalTheme == AppTheme.Light ? 1 : 0;
+
         CategoryList.SelectedIndex = 0;
         ShowCategory(0);
         _initializing = false;
@@ -127,6 +136,18 @@ public partial class SettingsWindow : Window
     public IReadOnlyDictionary<string, string> SelectedShortcuts =>
         new Dictionary<string, string>(_shortcutGestures);
 
+    public string Theme { get; private set; } = "Dark";
+
+    private void OnThemeChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_initializing)
+        {
+            return;
+        }
+
+        ThemeService.Apply(ThemeBox.SelectedIndex == 1 ? AppTheme.Light : AppTheme.Dark);
+    }
+
     private void OnCategoryChanged(object sender, SelectionChangedEventArgs e)
     {
         ShowCategory(CategoryList.SelectedIndex);
@@ -148,8 +169,6 @@ public partial class SettingsWindow : Window
 
     private void BuildExtensionChoices(IReadOnlyCollection<string> selectedExtensions)
     {
-        var foreground = new SolidColorBrush(Color.FromRgb(0xE8, 0xE8, 0xE8));
-
         foreach (var extension in FileAssociationService.SupportedExtensions)
         {
             var content = new StackPanel
@@ -171,23 +190,24 @@ public partial class SettingsWindow : Window
                 });
             }
 
-            content.Children.Add(new TextBlock
+            var extensionText = new TextBlock
             {
                 Text = extension,
-                Foreground = foreground,
                 FontSize = 12,
                 VerticalAlignment = VerticalAlignment.Center
-            });
+            };
+            extensionText.SetResourceReference(TextBlock.ForegroundProperty, "TextBrush");
+            content.Children.Add(extensionText);
 
             var checkBox = new CheckBox
             {
                 Content = content,
                 Tag = extension,
                 IsChecked = selectedExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase),
-                Foreground = foreground,
                 Margin = new Thickness(0, 0, 0, 6),
                 VerticalContentAlignment = VerticalAlignment.Center
             };
+            checkBox.SetResourceReference(Control.ForegroundProperty, "TextBrush");
 
             _extensionChecks[extension] = checkBox;
             var targetPanel = FileAssociationService.ImageExtensions.Contains(extension)
@@ -210,9 +230,9 @@ public partial class SettingsWindow : Window
             var label = new TextBlock
             {
                 Text = definition.Label,
-                Foreground = new SolidColorBrush(Color.FromRgb(0xE8, 0xE8, 0xE8)),
                 VerticalAlignment = VerticalAlignment.Center
             };
+            label.SetResourceReference(TextBlock.ForegroundProperty, "TextBrush");
             Grid.SetColumn(label, 0);
             row.Children.Add(label);
 
@@ -221,14 +241,14 @@ public partial class SettingsWindow : Window
                 Text = ShortcutService.ToDisplay(_shortcutGestures[definition.Id]),
                 IsReadOnly = true,
                 Height = 26,
-                Background = new SolidColorBrush(Color.FromRgb(0x2A, 0x2A, 0x2C)),
-                Foreground = new SolidColorBrush(Color.FromRgb(0xE8, 0xE8, 0xE8)),
-                BorderBrush = new SolidColorBrush(Color.FromRgb(0x4A, 0x4A, 0x4E)),
                 BorderThickness = new Thickness(1),
                 Padding = new Thickness(4, 2, 4, 2),
                 VerticalContentAlignment = VerticalAlignment.Center,
                 ToolTip = ShortcutService.ToDisplay(_shortcutGestures[definition.Id])
             };
+            gestureBox.SetResourceReference(Control.BackgroundProperty, "SurfaceBrush");
+            gestureBox.SetResourceReference(Control.ForegroundProperty, "TextBrush");
+            gestureBox.SetResourceReference(Control.BorderBrushProperty, "InputBorderBrush");
             Grid.SetColumn(gestureBox, 1);
             row.Children.Add(gestureBox);
             _shortcutBoxes[definition.Id] = gestureBox;
@@ -417,6 +437,20 @@ public partial class SettingsWindow : Window
         SingleWindowMode = WindowModeBox.SelectedIndex == 1;
         WrapNavigation = NavigationWrapBox.SelectedIndex == 0;
         ShowNavigationNotice = NavigationNoticeCheck.IsChecked == true;
+        Theme = ThemeBox.SelectedIndex == 1
+            ? ThemeService.ToSetting(AppTheme.Light)
+            : ThemeService.ToSetting(AppTheme.Dark);
+        _themeAccepted = true;
         DialogResult = true;
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        if (!_themeAccepted && ThemeService.Current != _originalTheme)
+        {
+            ThemeService.Apply(_originalTheme);
+        }
+
+        base.OnClosed(e);
     }
 }

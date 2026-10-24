@@ -24,6 +24,7 @@ public sealed class AppSettings
     public bool SingleWindowMode { get; set; }
     public bool WrapNavigation { get; set; } = true;
     public bool ShowNavigationNotice { get; set; } = true;
+    public string Theme { get; set; } = "Dark";
     public Dictionary<string, string> Shortcuts { get; set; } = new();
     public List<string> Bookmarks { get; set; } = new();
 

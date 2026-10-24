@@ -284,3 +284,11 @@ WPF 세부:
 - 범위: WebP/AVIF/HEIC/HEIF, 애니메이션 WebP, GIF 투명 프레임 합성, 100MP 초과 타일링, 프레임 카운터, 작은 이미지 확대 옵션
 - 릴리즈 노트: `docs/releases/v0.2.0.md`
 - 다음 릴리즈(v1.0) 후보: Inno Setup 설치본, 코드 서명, 시작/메모리 프로파일링, TIFF 다페이지·ICC·애니메이션 AVIF
+
+### v0.3.0 업데이트 (2026-10-24)
+
+- 외관: Windows 기본 크롬을 28px 한 줄 커스텀 크롬으로 교체. 파일명·`i / N` 칩, 우측 아이콘 툴바·창 버튼, Windows 11 작은 라운드 모서리와 어두운 테두리.
+- 테마: 라이트(은은한 베이지)/다크 전환. 설정 > 일반 > 테마에서 즉시 적용, 취소 시 원래 테마 복원, 재시작 후 선택 유지.
+- 대화상자: Settings/Bookmark/Rename에 28px 커스텀 타이틀바와 공용 테마 컨트롤(ComboBox/CheckBox/ScrollBar/ContextMenu/ToolTip) 적용.
+- 썸네일: 74px 플로팅 도크(기본 숨김, 하단 호버·`T`로 표시). Tab 정보 오버레이는 어두운 반투명 배경으로 가독성 개선.
+- 테스트 49개 통과. 릴리즈 노트: `docs/releases/v0.3.0.md`

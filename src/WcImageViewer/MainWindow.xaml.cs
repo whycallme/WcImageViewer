@@ -5,11 +5,14 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
+using System.Windows.Shell;
 using System.Windows.Threading;
 using Microsoft.Win32;
 using WcImageViewer.Models;
@@ -47,6 +50,7 @@ public partial class MainWindow : Window
     private WindowStyle _oldStyle;
     private ResizeMode _oldResizeMode;
     private Rect _oldBounds;
+    private WindowChrome? _windowChrome;
 
     private readonly SettingsService _settingsService;
     private readonly AppSettings _settings;
@@ -70,8 +74,12 @@ public partial class MainWindow : Window
         _shortcuts = ShortcutService.GetEffective(_settings.Shortcuts);
 
         InitializeComponent();
+        ThemeService.ThemeChanged += OnThemeChanged;
+        _windowChrome = WindowChrome.GetWindowChrome(this);
         Viewer.AllowUpscaleOnFit = !_settings.DoNotUpscaleSmallImages;
         ApplySettings();
+        StateChanged += (_, _) => UpdateWindowChromeState();
+        UpdateWindowChromeState();
 
         Viewer.ZoomChanged += (_, _) => UpdateZoomText();
         Viewer.NavigateRequested += (_, delta) => Navigate(delta);
@@ -107,6 +115,85 @@ public partial class MainWindow : Window
         }
     }
 
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        WindowCornerService.Apply(this);
+        if (PresentationSource.FromVisual(this) is HwndSource source)
+        {
+            source.AddHook(WndProc);
+        }
+    }
+
+    private const int WmGetMinMaxInfo = 0x0024;
+    private const int MonitorDefaultToNearest = 2;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativePoint
+    {
+        public int X;
+        public int Y;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MinMaxInfo
+    {
+        public NativePoint Reserved;
+        public NativePoint MaxSize;
+        public NativePoint MaxPosition;
+        public NativePoint MinTrackSize;
+        public NativePoint MaxTrackSize;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeRect
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MonitorInfo
+    {
+        public int Size;
+        public NativeRect Monitor;
+        public NativeRect Work;
+        public uint Flags;
+    }
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr MonitorFromWindow(IntPtr hwnd, int flags);
+
+    [DllImport("user32.dll")]
+    private static extern bool GetMonitorInfo(IntPtr monitor, ref MonitorInfo info);
+
+    // WindowChrome otherwise maximizes over the taskbar; clamp to the monitor work area.
+    private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        if (msg != WmGetMinMaxInfo)
+        {
+            return IntPtr.Zero;
+        }
+
+        var info = new MonitorInfo { Size = Marshal.SizeOf<MonitorInfo>() };
+        var monitor = MonitorFromWindow(hwnd, MonitorDefaultToNearest);
+        if (monitor == IntPtr.Zero || !GetMonitorInfo(monitor, ref info))
+        {
+            return IntPtr.Zero;
+        }
+
+        var minMax = Marshal.PtrToStructure<MinMaxInfo>(lParam);
+        minMax.MaxPosition.X = info.Work.Left - info.Monitor.Left;
+        minMax.MaxPosition.Y = info.Work.Top - info.Monitor.Top;
+        minMax.MaxSize.X = info.Work.Right - info.Work.Left;
+        minMax.MaxSize.Y = info.Work.Bottom - info.Work.Top;
+        Marshal.StructureToPtr(minMax, lParam, true);
+        handled = true;
+        return IntPtr.Zero;
+    }
+
     private void ApplySettings()
     {
         Width = MinWidth;
@@ -140,6 +227,48 @@ public partial class MainWindow : Window
         UpdateThumbnailVisibility();
         _slideshowTimer.Interval = TimeSpan.FromSeconds(
             Math.Clamp(_settings.SlideshowIntervalSeconds, 2, 60));
+    }
+
+    private void UpdateWindowChromeState()
+    {
+        var maximized = WindowState == WindowState.Maximized;
+        MaximizeGlyph.Text = maximized ? "\uE923" : "\uE922";
+        var label = maximized ? "복원" : "최대화";
+        MaximizeButton.ToolTip = label;
+        AutomationProperties.SetName(MaximizeButton, label);
+    }
+
+    private void OnMinimizeClick(object sender, RoutedEventArgs e)
+    {
+        WindowState = WindowState.Minimized;
+    }
+
+    private void OnMaximizeClick(object sender, RoutedEventArgs e)
+    {
+        WindowState = WindowState == WindowState.Maximized
+            ? WindowState.Normal
+            : WindowState.Maximized;
+    }
+
+    private void OnCloseClick(object sender, RoutedEventArgs e)
+    {
+        Close();
+    }
+
+    private void UpdateChromeTitle()
+    {
+        if (_source is not null && _index >= 0 && _index < _source.Count)
+        {
+            ChromeTitle.Text = _source.GetEntry(_index).DisplayName;
+            CountChipText.Text = $"{_index + 1} / {_source.Count}";
+            CountChip.Visibility = Visibility.Visible;
+            ChromeTitle.ToolTip = Title;
+            return;
+        }
+
+        ChromeTitle.Text = "WC Image Viewer";
+        CountChip.Visibility = Visibility.Collapsed;
+        ChromeTitle.ToolTip = null;
     }
 
     private async Task OpenPathAsync(string path)
@@ -287,11 +416,12 @@ public partial class MainWindow : Window
         _source = source;
         _index = Math.Clamp(index, 0, source.Count - 1);
         HideNavigationNotice();
-        InfoOverlayText.Visibility = Visibility.Collapsed;
+        InfoOverlayBorder.Visibility = Visibility.Collapsed;
         _thumbnailsHover = false;
         UpdateThumbnailVisibility();
         Thumbnails.SetSource(source, _index);
         Title = source.DisplayName;
+        UpdateChromeTitle();
 
         await LoadCurrentAsync();
     }
@@ -311,6 +441,7 @@ public partial class MainWindow : Window
 
         StopAnimation();
         Thumbnails.SelectIndex(_index);
+        UpdateWindowTitle();
 
         var entry = source.GetEntry(_index);
         var cacheKey = CacheKey(source, entry);
@@ -358,10 +489,11 @@ public partial class MainWindow : Window
 
             StopAnimation();
             Viewer.Clear();
-            InfoOverlayText.Visibility = Visibility.Collapsed;
+            InfoOverlayBorder.Visibility = Visibility.Collapsed;
             EmptyText.Text = $"이미지를 열 수 없습니다.\n{ex.Message}";
             EmptyText.Visibility = Visibility.Visible;
             Title = $"{entry.DisplayName} [{_index + 1}/{source.Count}] (오류)";
+            UpdateChromeTitle();
             UpdateZoomText();
         }
     }
@@ -379,6 +511,7 @@ public partial class MainWindow : Window
             ? string.Empty
             : $" ({_document.PixelWidth}x{_document.PixelHeight})";
         Title = $"{entry.DisplayName} [{_index + 1}/{_source.Count}]{dimensions}";
+        UpdateChromeTitle();
     }
 
     private void DisplayDocument(IImageSource source, ImageEntry entry, ImageDocument document)
@@ -406,7 +539,7 @@ public partial class MainWindow : Window
 
         UpdateZoomText();
 
-        if (InfoOverlayText.Visibility == Visibility.Visible)
+        if (InfoOverlayBorder.Visibility == Visibility.Visible)
         {
             UpdateInfoText();
         }
@@ -524,7 +657,7 @@ public partial class MainWindow : Window
             ? TimeSpan.FromMilliseconds(1)
             : interval;
 
-        if (InfoOverlayText.Visibility == Visibility.Visible)
+        if (InfoOverlayBorder.Visibility == Visibility.Visible)
         {
             UpdateInfoText();
         }
@@ -603,11 +736,12 @@ public partial class MainWindow : Window
 
         HideNavigationNotice();
         Thumbnails.Clear();
-        InfoOverlayText.Visibility = Visibility.Collapsed;
+        InfoOverlayBorder.Visibility = Visibility.Collapsed;
         _thumbnailsHover = false;
         UpdateThumbnailVisibility();
         Viewer.Clear();
         Title = "WC Image Viewer";
+        UpdateChromeTitle();
         EmptyText.Text = message;
         EmptyText.Visibility = Visibility.Visible;
         UpdateZoomText();
@@ -661,8 +795,8 @@ public partial class MainWindow : Window
 
     private double GetThumbnailOverlayTop()
     {
-        var height = Thumbnails.ActualHeight > 0 ? Thumbnails.ActualHeight : 112;
-        return GetViewerBottom() - height;
+        var height = Thumbnails.ActualHeight > 0 ? Thumbnails.ActualHeight : 74;
+        return GetViewerBottom() - height - Thumbnails.Margin.Bottom;
     }
 
     private double GetViewerBottom()
@@ -1134,14 +1268,14 @@ public partial class MainWindow : Window
 
     private void ToggleInfoOverlay()
     {
-        if (InfoOverlayText.Visibility == Visibility.Visible)
+        if (InfoOverlayBorder.Visibility == Visibility.Visible)
         {
-            InfoOverlayText.Visibility = Visibility.Collapsed;
+            InfoOverlayBorder.Visibility = Visibility.Collapsed;
             return;
         }
 
         UpdateInfoText();
-        InfoOverlayText.Visibility = Visibility.Visible;
+        InfoOverlayBorder.Visibility = Visibility.Visible;
     }
 
     private void UpdateInfoText()
@@ -1523,7 +1657,8 @@ public partial class MainWindow : Window
             _settings.SingleWindowMode,
             _settings.WrapNavigation,
             _settings.ShowNavigationNotice,
-            _settings.Shortcuts)
+            _settings.Shortcuts,
+            _settings.Theme)
         {
             Owner = this
         };
@@ -1554,6 +1689,7 @@ public partial class MainWindow : Window
         _settings.SingleWindowMode = dialog.SingleWindowMode;
         _settings.WrapNavigation = dialog.WrapNavigation;
         _settings.ShowNavigationNotice = dialog.ShowNavigationNotice;
+        _settings.Theme = dialog.Theme;
         if (!_settings.ShowNavigationNotice)
         {
             HideNavigationNotice();
@@ -1695,7 +1831,9 @@ public partial class MainWindow : Window
             }
 
             _slideshowTimer.Start();
-            SlideshowButton.Content = "중지";
+            SlideshowButton.Content = "\uE769";
+            SlideshowButton.ToolTip = "슬라이드쇼 중지 (S)";
+            AutomationProperties.SetName(SlideshowButton, "슬라이드쇼 중지");
         }
     }
 
@@ -1777,7 +1915,9 @@ public partial class MainWindow : Window
     {
         _slideshowTimer.Stop();
         _slideshowOrder.Clear();
-        SlideshowButton.Content = "슬라이드";
+        SlideshowButton.Content = "\uE768";
+        SlideshowButton.ToolTip = "슬라이드쇼 시작 (S)";
+        AutomationProperties.SetName(SlideshowButton, "슬라이드쇼 시작");
     }
 
     private void OnSlideshowClick(object sender, RoutedEventArgs e) => ToggleSlideshow();
@@ -1829,6 +1969,14 @@ public partial class MainWindow : Window
         }
     }
 
+    private void OnThemeChanged(object? sender, EventArgs e)
+    {
+        if (_isFullscreen)
+        {
+            WindowCornerService.SetSquare(this);
+        }
+    }
+
     private void ToggleFullscreen()
     {
         if (!_isFullscreen)
@@ -1841,6 +1989,12 @@ public partial class MainWindow : Window
             ToolbarBorder.Visibility = Visibility.Collapsed;
             _thumbnailsHover = false;
             UpdateThumbnailVisibility();
+            if (_windowChrome is not null)
+            {
+                _windowChrome.CaptionHeight = 0;
+                _windowChrome.ResizeBorderThickness = new Thickness(0);
+            }
+
             WindowStyle = WindowStyle.None;
             ResizeMode = ResizeMode.NoResize;
             WindowState = WindowState.Normal;
@@ -1848,6 +2002,7 @@ public partial class MainWindow : Window
             Top = SystemParameters.VirtualScreenTop;
             Width = SystemParameters.VirtualScreenWidth;
             Height = SystemParameters.VirtualScreenHeight;
+            WindowCornerService.SetSquare(this);
             _isFullscreen = true;
         }
         else
@@ -1861,6 +2016,13 @@ public partial class MainWindow : Window
             Width = _oldBounds.Width;
             Height = _oldBounds.Height;
             ToolbarBorder.Visibility = Visibility.Visible;
+            WindowCornerService.Apply(this);
+            if (_windowChrome is not null)
+            {
+                _windowChrome.CaptionHeight = 28;
+                _windowChrome.ResizeBorderThickness = new Thickness(6);
+            }
+
             UpdateThumbnailVisibility();
         }
 
@@ -1878,6 +2040,7 @@ public partial class MainWindow : Window
         _loadCts?.Dispose();
         _preloadCts?.Cancel();
         _preloadCts?.Dispose();
+        ThemeService.ThemeChanged -= OnThemeChanged;
         _source?.Dispose();
         base.OnClosed(e);
     }

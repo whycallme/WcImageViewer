@@ -2,14 +2,16 @@
 
 Windows용 가볍고 빠른 이미지 뷰어입니다. 폴더와 압축파일(ZIP/CBZ, 7Z/CB7, RAR/CBR)을 열면 첫 이미지가 바로 표시되며, 설치 없이 실행할 수 있습니다.
 
+v0.3.0에서는 28px 커스텀 창 크롬, 플로팅 썸네일 도크, 라이트/다크 테마를 추가했습니다.
+
 ## 다운로드
 
 [릴리즈 페이지](https://github.com/whycallme/WcImageViewer/releases/latest)에서 두 가지 방식으로 받을 수 있습니다.
 
 | 파일 | 크기 | 요구사항 |
 |---|---|---|
-| `WcImageViewer-portable-win-x64.zip` | 약 59MB | 없음 (self-contained) |
-| `WcImageViewer-lite-win-x64.zip` | 약 2.9MB | .NET 10 Desktop Runtime |
+| `WcImageViewer-portable-win-x64.zip` | 62,167,108 B (약 62MB) | 없음 (self-contained) |
+| `WcImageViewer-lite-win-x64.zip` | 3,069,759 B (약 3MB) | .NET 10 Desktop Runtime |
 
 압축을 풀고 `WcImageViewer.exe`를 실행하세요. 이미지 파일, 폴더, 압축파일을 인자로 넘기거나 창에 끌어다 놓아도 됩니다.
 
@@ -24,7 +26,7 @@ WcImageViewer.exe "C:\images\photos.zip"
 - JPEG, PNG, BMP, GIF(애니메이션), TIFF, ICO, WebP(애니메이션), AVIF, HEIC/HEIF
 - 100MP 초과 이미지 타일 디코딩 (원본 해상도 확대, 메모리 사용 제한)
 - ZIP/CBZ, 7Z/CB7, RAR/CBR 읽기 (압축파일 내부 이미지 탐색, 고체 압축 진행률 표시)
-- 이전/다음, 썸네일 스트립(기본 숨김, 하단 호버·T로 표시), 슬라이드쇼
+- 이전/다음, 플로팅 썸네일 도크(74px, 기본 숨김, 하단 호버·T로 표시), 슬라이드쇼
 - 슬라이드쇼 반복 재생·랜덤 재생 설정 (랜덤은 한 바퀴 무작위 순서)
 - 마지막/첫 파일에서 이동 방식을 `첫 파일로 가기` 또는 `아무것도 안 하기`로 선택
 - 경계에서 “첫 파일입니다.” / “마지막 파일입니다.” 중앙 알림 표시 (선택)
@@ -36,7 +38,8 @@ WcImageViewer.exe "C:\images\photos.zip"
 - 이미지 영역 드래그로 창 이동
 - 설정에서 편집 앱 선택, 확장자별 기본 앱 연결, 단축키 변경
 - 여러 창으로 열기 / 하나의 창으로 열기 선택 (다음 실행부터 적용)
-- EXIF orientation, 다크 테마, High-DPI 대응
+- EXIF orientation, 라이트/다크 테마, High-DPI 대응
+- 28px 얇은 커스텀 창 크롬, 파일명·이미지 개수 표시, 우측 컴팩트 툴바, Windows 11 작은 라운드 모서리
 - 확장자별 파일 아이콘과 앱 아이콘
 
 > WebP/AVIF/HEIC는 Windows에 설치된 WIC 이미지 확장을 사용합니다. HEIC/HEIF는 Microsoft Store의 **HEIF 이미지 확장**과 **HEVC 비디오 확장**이 필요합니다. 100MP 초과 이미지는 보기용으로 타일 디코딩되며, 다른 이름으로 저장·클립보드 복사는 화면용 미리보기(최대 4096px)로 동작합니다.
@@ -72,7 +75,7 @@ WcImageViewer.exe "C:\images\photos.zip"
 ## 설정
 
 - 설정은 `%LOCALAPPDATA%\WcImageViewer\settings.json`에 저장됩니다. 기존 exe 옆 또는 `%APPDATA%` 설정은 처음 실행 시 자동으로 이전됩니다.
-- 최근 항목, 썸네일 고정 표시, 슬라이드쇼 간격·반복·랜덤 재생, 기본 표시 배율, 이미지를 열 때 창 맞춤, 작은 이미지 확대 여부, 파일 끝에서 이동 방식과 경계 알림, 삭제 전 확인·휴지통 사용, 편집 앱, 확장자별 파일 연결, 단축키, 여러 창/한 창 열기 방식을 기억합니다.
+- 최근 항목, 라이트/다크 테마, 썸네일 고정 표시, 슬라이드쇼 간격·반복·랜덤 재생, 기본 표시 배율, 이미지를 열 때 창 맞춤, 작은 이미지 확대 여부, 파일 끝에서 이동 방식과 경계 알림, 삭제 전 확인·휴지통 사용, 편집 앱, 확장자별 파일 연결, 단축키, 여러 창/한 창 열기 방식을 기억합니다.
 - 앱은 이전 창 위치에서 최소 크기(800×600)로 시작합니다.
 - 파일 연결은 사용자 계정(HKCU)에 등록하며, Windows 기본 앱 정책에 따라 확인이 필요할 수 있습니다.
 
@@ -91,7 +94,7 @@ dotnet run --project src/WcImageViewer
 ```text
 src/WcImageViewer/     WPF 앱 (Models, Services, Controls, 창)
 tests/                 xUnit 테스트
-design/                아이콘 시안과 생성 스크립트
+design/                아이콘/UI 시안과 생성 스크립트
 scripts/publish.ps1    portable/lite 게시 및 zip 생성
 docs/PLAN.md           개발 계획과 진행 상태
 ```

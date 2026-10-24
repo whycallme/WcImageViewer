@@ -1,6 +1,7 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Threading;
+using WcImageViewer.Services;
 
 namespace WcImageViewer;
 
@@ -11,6 +12,7 @@ public partial class RenameWindow : Window
     public RenameWindow(string currentName)
     {
         InitializeComponent();
+        SourceInitialized += (_, _) => WindowCornerService.Apply(this);
         NameBox.Text = currentName;
         _extension = Path.GetExtension(currentName);
         Loaded += (_, _) => NameBox.Focus();

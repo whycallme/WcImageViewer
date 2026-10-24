@@ -7,3 +7,5 @@ __pycache__/
 *.pyc
 .vscode/
 .idea/
+design/ui-concepts/impl*.png
+design/ui-concepts/theme-*.png
