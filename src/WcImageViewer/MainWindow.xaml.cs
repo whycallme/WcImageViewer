@@ -31,6 +31,8 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer _slideshowTimer = new() { Interval = TimeSpan.FromSeconds(3) };
     private readonly DispatcherTimer _thumbnailHideTimer = new() { Interval = TimeSpan.FromMilliseconds(350) };
     private readonly DispatcherTimer _noticeTimer = new() { Interval = TimeSpan.FromMilliseconds(1200) };
+    private readonly DispatcherTimer _updateCheckTimer = new() { Interval = TimeSpan.FromHours(24) };
+    private readonly CancellationTokenSource _updateLifetime = new();
     private readonly ImageDocumentCache _imageCache = new(3);
     private readonly HashSet<string> _preloading = new(StringComparer.Ordinal);
     private readonly List<int> _slideshowOrder = new();
@@ -62,6 +64,11 @@ public partial class MainWindow : Window
     private bool _isWindowDragging;
     private double _windowDragOffsetX;
     private double _windowDragOffsetY;
+    private CancellationTokenSource? _updateCts;
+    private bool _updateChecksStarted;
+    private bool _allowClose;
+    private bool _updatePromptOpen;
+    private bool _isSessionEnding;
 
     public MainWindow() : this(SettingsService.LoadDefault())
     {
@@ -75,6 +82,10 @@ public partial class MainWindow : Window
 
         InitializeComponent();
         ThemeService.ThemeChanged += OnThemeChanged;
+        if (Application.Current is { } application)
+        {
+            application.SessionEnding += OnSessionEnding;
+        }
         _windowChrome = WindowChrome.GetWindowChrome(this);
         Viewer.AllowUpscaleOnFit = !_settings.DoNotUpscaleSmallImages;
         ApplySettings();
@@ -89,7 +100,15 @@ public partial class MainWindow : Window
         _animationTimer.Tick += (_, _) => AdvanceAnimation();
         _slideshowTimer.Tick += (_, _) => AdvanceSlideshow();
         _noticeTimer.Tick += (_, _) => HideNavigationNotice();
-        Loaded += (_, _) => Viewer.Focus();
+        _updateCheckTimer.Tick += async (_, _) => await RunUpdateCheckAsync(manual: false);
+        UpdateService.Instance.Initialize(_settings.PendingUpdate, _settings.LastUpdateCheckUtc);
+        UpdateService.Instance.StateChanged += OnUpdateStateChanged;
+        ApplyUpdateIndicator();
+        Loaded += (_, _) =>
+        {
+            Viewer.Focus();
+            _ = StartUpdateChecksAsync();
+        };
         _thumbnailHideTimer.Tick += (_, _) =>
         {
             _thumbnailHideTimer.Stop();
@@ -236,6 +255,119 @@ public partial class MainWindow : Window
         var label = maximized ? "복원" : "최대화";
         MaximizeButton.ToolTip = label;
         AutomationProperties.SetName(MaximizeButton, label);
+    }
+
+    private async Task StartUpdateChecksAsync()
+    {
+        if (_updateChecksStarted)
+        {
+            return;
+        }
+
+        _updateChecksStarted = true;
+        _updateCheckTimer.Start();
+
+        if (!_settings.AutoCheckUpdates)
+        {
+            return;
+        }
+
+        var hasRecentCheck = _settings.LastUpdateCheckUtc is DateTime lastCheck &&
+            DateTime.UtcNow - lastCheck < TimeSpan.FromHours(24);
+        if (hasRecentCheck && _settings.PendingUpdate is not null)
+        {
+            return;
+        }
+
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(3), _updateLifetime.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        await RunUpdateCheckAsync(manual: false);
+    }
+
+    private async Task RunUpdateCheckAsync(bool manual)
+    {
+        if (!manual && !_settings.AutoCheckUpdates)
+        {
+            return;
+        }
+
+        _updateCts?.Cancel();
+        _updateCts?.Dispose();
+        _updateCts = CancellationTokenSource.CreateLinkedTokenSource(_updateLifetime.Token);
+
+        var result = await UpdateService.Instance.CheckAsync(
+            AppVersion.Current,
+            manual,
+            _updateCts.Token);
+
+        if (result.Status == UpdateCheckStatus.Busy)
+        {
+            return;
+        }
+
+        _settings.PendingUpdate = UpdateService.Instance.AvailableRelease;
+        _settings.LastUpdateCheckUtc = UpdateService.Instance.LastCheckUtc;
+        SaveUpdateState();
+        ApplyUpdateIndicator();
+    }
+
+    private void OnUpdateStateChanged(object? sender, EventArgs e)
+    {
+        if (!Dispatcher.CheckAccess())
+        {
+            Dispatcher.InvokeAsync(() => ApplyUpdateIndicator());
+            return;
+        }
+
+        ApplyUpdateIndicator();
+    }
+
+    private void ApplyUpdateIndicator()
+    {
+        var release = UpdateService.Instance.AvailableRelease;
+        var showDot = release is not null && !IsSkippedVersion(release.Tag);
+
+        SettingsUpdateDot.Visibility = showDot ? Visibility.Visible : Visibility.Collapsed;
+        SettingsButton.ToolTip = showDot
+            ? "설정 (F5 / Ctrl+,) — 업데이트 있음"
+            : "설정 (F5 / Ctrl+,)";
+        AutomationProperties.SetName(SettingsButton, showDot ? "설정 — 업데이트 있음" : "설정");
+    }
+
+    private bool IsSkippedVersion(string tag)
+    {
+        if (string.IsNullOrWhiteSpace(_settings.SkippedVersion))
+        {
+            return false;
+        }
+
+        var version = UpdateService.ParseTagVersion(tag);
+        return version is not null &&
+            string.Equals(
+                UpdateService.FormatVersion(version),
+                _settings.SkippedVersion,
+                StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void SaveUpdateState()
+    {
+        try
+        {
+            _settingsService.Save();
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
     }
 
     private void OnMinimizeClick(object sender, RoutedEventArgs e)
@@ -1658,7 +1790,9 @@ public partial class MainWindow : Window
             _settings.WrapNavigation,
             _settings.ShowNavigationNotice,
             _settings.Shortcuts,
-            _settings.Theme)
+            _settings.Theme,
+            _settings.AutoCheckUpdates,
+            _settings.SkippedVersion)
         {
             Owner = this
         };
@@ -1690,6 +1824,17 @@ public partial class MainWindow : Window
         _settings.WrapNavigation = dialog.WrapNavigation;
         _settings.ShowNavigationNotice = dialog.ShowNavigationNotice;
         _settings.Theme = dialog.Theme;
+        _settings.AutoCheckUpdates = dialog.AutoCheckUpdates;
+        if (dialog.ClearSkippedVersion)
+        {
+            _settings.SkippedVersion = string.Empty;
+        }
+
+        _settings.PendingUpdate = UpdateService.Instance.AvailableRelease;
+        _settings.LastUpdateCheckUtc = UpdateService.Instance.LastCheckUtc;
+        SaveUpdateState();
+        ApplyUpdateIndicator();
+
         if (!_settings.ShowNavigationNotice)
         {
             HideNavigationNotice();
@@ -2029,13 +2174,119 @@ public partial class MainWindow : Window
         Viewer.FitToWindow();
     }
 
+    private void OnSessionEnding(object sender, SessionEndingCancelEventArgs e)
+    {
+        _isSessionEnding = true;
+    }
+
+    protected override void OnClosing(CancelEventArgs e)
+    {
+        base.OnClosing(e);
+        if (e.Cancel || _allowClose || _isSessionEnding)
+        {
+            return;
+        }
+
+        if (_updatePromptOpen)
+        {
+            e.Cancel = true;
+            return;
+        }
+
+        var release = UpdateService.Instance.AvailableRelease;
+        if (release is null || IsSkippedVersion(release.Tag))
+        {
+            return;
+        }
+
+        e.Cancel = true;
+        _updatePromptOpen = true;
+        Dispatcher.BeginInvoke(
+            new Action(() => CompleteUpdatePrompt(release)),
+            DispatcherPriority.Normal);
+    }
+
+    private void CompleteUpdatePrompt(UpdateRelease release)
+    {
+        try
+        {
+            if (_isSessionEnding)
+            {
+                _allowClose = true;
+                Close();
+                return;
+            }
+
+            if (!ShowUpdatePrompt(release))
+            {
+                return;
+            }
+
+            _allowClose = true;
+            Close();
+        }
+        finally
+        {
+            _updatePromptOpen = false;
+        }
+    }
+
+    private bool ShowUpdatePrompt(UpdateRelease release)
+    {
+        try
+        {
+            var dialog = new UpdateWindow(release) { Owner = this };
+            var result = dialog.ShowDialog();
+
+            _settings.PendingUpdate = release;
+            _settings.LastUpdateCheckUtc = UpdateService.Instance.LastCheckUtc;
+
+            if (result == true)
+            {
+                return true;
+            }
+
+            if (dialog.SkipVersion)
+            {
+                _settings.SkippedVersion = UpdateService.ParseTagVersion(release.Tag) is { } skipped
+                    ? UpdateService.FormatVersion(skipped)
+                    : release.Tag;
+                ApplyUpdateIndicator();
+            }
+
+            SaveUpdateState();
+            return true;
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or Win32Exception)
+        {
+            MessageBox.Show(
+                this,
+                $"업데이트 창을 열 수 없습니다.\n{ex.Message}",
+                "업데이트",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return false;
+        }
+    }
+
     protected override void OnClosed(EventArgs e)
     {
+        if (Application.Current is { } application)
+        {
+            application.SessionEnding -= OnSessionEnding;
+        }
+
         CaptureSettings();
         _slideshowTimer.Stop();
         _animationTimer.Stop();
         _thumbnailHideTimer.Stop();
         _noticeTimer.Stop();
+        _updateCheckTimer.Stop();
+        _updateCts?.Cancel();
+        _updateCts?.Dispose();
+        _updateLifetime.Cancel();
+        _updateLifetime.Dispose();
+        UpdateService.Instance.StateChanged -= OnUpdateStateChanged;
         _loadCts?.Cancel();
         _loadCts?.Dispose();
         _preloadCts?.Cancel();

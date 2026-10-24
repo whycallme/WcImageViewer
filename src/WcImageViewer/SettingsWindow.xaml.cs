@@ -27,8 +27,10 @@ public partial class SettingsWindow : Window
     private readonly Dictionary<string, string> _shortcutGestures;
     private readonly AppTheme _originalTheme;
     private string? _capturingActionId;
+    private string _skippedVersion = string.Empty;
     private bool _initializing = true;
     private bool _themeAccepted;
+    private bool _closed;
 
     public SettingsWindow(
         int slideshowIntervalSeconds,
@@ -46,7 +48,9 @@ public partial class SettingsWindow : Window
         bool wrapNavigation,
         bool showNavigationNotice,
         IReadOnlyDictionary<string, string> shortcuts,
-        string theme)
+        string theme,
+        bool autoCheckUpdates,
+        string skippedVersion)
     {
         InitializeComponent();
         SourceInitialized += (_, _) => WindowCornerService.Apply(this);
@@ -102,6 +106,13 @@ public partial class SettingsWindow : Window
 
         CategoryList.SelectedIndex = 0;
         ShowCategory(0);
+
+        CurrentVersionText.Text = $"{AppVersion.Display} ({AppVersion.Flavor})";
+        AutoCheckUpdatesCheck.IsChecked = autoCheckUpdates;
+        _skippedVersion = skippedVersion?.Trim() ?? string.Empty;
+        UpdateService.Instance.StateChanged += OnUpdateStateChanged;
+        RefreshUpdateSection();
+
         _initializing = false;
     }
 
@@ -137,6 +148,10 @@ public partial class SettingsWindow : Window
         new Dictionary<string, string>(_shortcutGestures);
 
     public string Theme { get; private set; } = "Dark";
+
+    public bool AutoCheckUpdates { get; private set; } = true;
+
+    public bool ClearSkippedVersion { get; private set; }
 
     private void OnThemeChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -375,6 +390,111 @@ public partial class SettingsWindow : Window
         }
     }
 
+    private async void OnCheckNowClick(object sender, RoutedEventArgs e)
+    {
+        if (_closed)
+        {
+            return;
+        }
+
+        await UpdateService.Instance.CheckAsync(AppVersion.Current, manual: true);
+        if (_closed)
+        {
+            return;
+        }
+
+        RefreshUpdateSection();
+    }
+
+    private void OnClearSkippedClick(object sender, RoutedEventArgs e)
+    {
+        _skippedVersion = string.Empty;
+        ClearSkippedVersion = true;
+        RefreshUpdateSection();
+    }
+
+    private void OnUpdateStateChanged(object? sender, EventArgs e)
+    {
+        if (_closed)
+        {
+            return;
+        }
+
+        if (!Dispatcher.CheckAccess())
+        {
+            Dispatcher.InvokeAsync(() => RefreshUpdateSection());
+            return;
+        }
+
+        RefreshUpdateSection();
+    }
+
+    private void RefreshUpdateSection()
+    {
+        if (UpdateStatusText is null)
+        {
+            return;
+        }
+
+        var service = UpdateService.Instance;
+        var releaseVersion = service.AvailableRelease is { } release
+            ? UpdateService.ParseTagVersion(release.Tag)
+            : null;
+        var releaseText = releaseVersion is null
+            ? null
+            : $"v{UpdateService.FormatVersion(releaseVersion)}";
+
+        CheckNowButton.IsEnabled = !service.IsChecking;
+        SkippedVersionText.Text = $"건너뛴 버전 v{_skippedVersion}";
+        SkippedVersionRow.Visibility = _skippedVersion.Length > 0
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+
+        if (service.IsChecking)
+        {
+            SetUpdateStatus("업데이트 확인 중…", "SecondaryTextBrush");
+        }
+        else if (releaseText is not null && IsSkipped(releaseVersion))
+        {
+            SetUpdateStatus($"{releaseText} 건너뜀", "SecondaryTextBrush");
+        }
+        else if (releaseText is not null)
+        {
+            SetUpdateStatus($"{releaseText} 사용 가능 — 종료 시 업데이트 안내", "AccentBrush");
+        }
+        else if (!string.IsNullOrEmpty(service.LastError))
+        {
+            SetUpdateStatus($"확인 실패: {service.LastError}", "SecondaryTextBrush");
+        }
+        else if (service.LastCheckUtc is not null)
+        {
+            SetUpdateStatus("최신 버전입니다", "SecondaryTextBrush");
+        }
+        else
+        {
+            SetUpdateStatus("아직 확인하지 않았습니다", "TertiaryTextBrush");
+        }
+
+        LastCheckText.Text = service.LastCheckUtc is DateTime lastCheck
+            ? $"마지막 확인: {lastCheck.ToLocalTime():yyyy-MM-dd HH:mm}"
+            : "마지막 확인: 없음";
+    }
+
+    private bool IsSkipped(Version? releaseVersion)
+    {
+        return releaseVersion is not null &&
+            string.Equals(
+                UpdateService.FormatVersion(releaseVersion),
+                _skippedVersion,
+                StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void SetUpdateStatus(string text, string brushKey)
+    {
+        UpdateStatusText.Text = text;
+        UpdateStatusText.SetResourceReference(TextBlock.ForegroundProperty, brushKey);
+    }
+
     private void OnBrowseEditorClick(object sender, RoutedEventArgs e)
     {
         var dialog = new OpenFileDialog
@@ -437,6 +557,7 @@ public partial class SettingsWindow : Window
         SingleWindowMode = WindowModeBox.SelectedIndex == 1;
         WrapNavigation = NavigationWrapBox.SelectedIndex == 0;
         ShowNavigationNotice = NavigationNoticeCheck.IsChecked == true;
+        AutoCheckUpdates = AutoCheckUpdatesCheck.IsChecked == true;
         Theme = ThemeBox.SelectedIndex == 1
             ? ThemeService.ToSetting(AppTheme.Light)
             : ThemeService.ToSetting(AppTheme.Dark);
@@ -446,6 +567,9 @@ public partial class SettingsWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        _closed = true;
+        UpdateService.Instance.StateChanged -= OnUpdateStateChanged;
+
         if (!_themeAccepted && ThemeService.Current != _originalTheme)
         {
             ThemeService.Apply(_originalTheme);

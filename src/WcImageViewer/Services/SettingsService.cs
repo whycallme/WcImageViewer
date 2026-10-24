@@ -171,6 +171,27 @@ public sealed class SettingsService
         settings.DefaultZoomPercent = settings.DefaultZoomPercent <= 0
             ? 0
             : Math.Clamp(settings.DefaultZoomPercent, 5, 800);
+
+        settings.SkippedVersion = UpdateService.ParseTagVersion(settings.SkippedVersion) is { } skippedVersion
+            ? UpdateService.FormatVersion(skippedVersion)
+            : string.Empty;
+
+        if (settings.LastUpdateCheckUtc is DateTime lastCheck)
+        {
+            settings.LastUpdateCheckUtc = lastCheck.Kind == DateTimeKind.Utc
+                ? lastCheck
+                : lastCheck.ToUniversalTime();
+        }
+
+        if (settings.PendingUpdate is not null)
+        {
+            var pendingVersion = UpdateService.ParseTagVersion(settings.PendingUpdate.Tag);
+            if (pendingVersion is null || pendingVersion <= AppVersion.Current)
+            {
+                settings.PendingUpdate = null;
+            }
+        }
+
         return settings;
     }
 }

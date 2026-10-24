@@ -164,6 +164,78 @@
                     <TextBlock Text="창 열기 방식은 다음 실행부터 적용됩니다."
                                Foreground="{DynamicResource TertiaryTextBrush}"
                                Margin="0,12,0,0" />
+
+                    <Border Height="1"
+                            Background="{DynamicResource BorderBrush}"
+                            Margin="0,14,0,0" />
+
+                    <TextBlock Text="업데이트"
+                               Foreground="{DynamicResource TextBrush}"
+                               FontSize="14"
+                               FontWeight="SemiBold"
+                               Margin="0,12,0,8" />
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="현재 버전"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   VerticalAlignment="Center" />
+                        <TextBlock x:Name="CurrentVersionText"
+                                   Grid.Column="1"
+                                   Foreground="{DynamicResource TextBrush}"
+                                   VerticalAlignment="Center" />
+                    </Grid>
+
+                    <CheckBox x:Name="AutoCheckUpdatesCheck"
+                              Content="자동으로 업데이트 확인"
+                              Foreground="{DynamicResource TextBrush}"
+                              Margin="0,10,0,0" />
+
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Button x:Name="CheckNowButton"
+                                Content="지금 확인"
+                                Click="OnCheckNowClick"
+                                VerticalAlignment="Top" />
+                        <TextBlock x:Name="UpdateStatusText"
+                                   Grid.Column="1"
+                                   Margin="10,6,0,0"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   TextWrapping="Wrap"
+                                   VerticalAlignment="Center" />
+                    </Grid>
+
+                    <TextBlock x:Name="LastCheckText"
+                               Foreground="{DynamicResource TertiaryTextBrush}"
+                               Margin="0,6,0,0" />
+
+                    <Grid x:Name="SkippedVersionRow"
+                          Margin="0,6,0,0"
+                          Visibility="Collapsed">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock x:Name="SkippedVersionText"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   VerticalAlignment="Center" />
+                        <Button Grid.Column="1"
+                                Content="다시 알림"
+                                FontSize="11"
+                                Padding="6,2"
+                                Click="OnClearSkippedClick" />
+                    </Grid>
+
+                    <TextBlock Text="업데이트 다운로드와 적용은 앱을 종료할 때 안내합니다."
+                               Foreground="{DynamicResource TertiaryTextBrush}"
+                               TextWrapping="Wrap"
+                               Margin="0,8,0,0" />
                 </StackPanel>
 
                 <StackPanel x:Name="ViewPanel" Visibility="Collapsed">

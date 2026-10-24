@@ -292,3 +292,11 @@ WPF 세부:
 - 대화상자: Settings/Bookmark/Rename에 28px 커스텀 타이틀바와 공용 테마 컨트롤(ComboBox/CheckBox/ScrollBar/ContextMenu/ToolTip) 적용.
 - 썸네일: 74px 플로팅 도크(기본 숨김, 하단 호버·`T`로 표시). Tab 정보 오버레이는 어두운 반투명 배경으로 가독성 개선.
 - 테스트 49개 통과. 릴리즈 노트: `docs/releases/v0.3.0.md`
+
+### v0.4.0 릴리즈 (2026-10-24)
+
+- 업데이트: 시작 3초 후 GitHub 최신 릴리즈 확인(24시간 간격), 새 버전이면 설정 아이콘에 점 표시, 설정 > 업데이트에서 현재 버전/자동 확인/지금 확인/마지막 확인/건너뛴 버전(다시 알림) 관리.
+- 종료 시 업데이트 창: 업데이트하고 종료 / 그냥 종료 / 이 버전 건너뛰기. ZIP을 내려받아 크기·SHA-256 digest를 검증하고, `WcImageViewer.Updater.exe`(.NET Framework 4.8, csc 컴파일)가 앱 종료 후 파일을 교체·재실행하며 실패 시 이전 버전으로 복원.
+- 릴리즈 노트: GitHub Markdown 본문을 `ReleaseNotesFormatter`로 평문 변환(`#`, `**`, 백틱, 링크, 표, 코드펜스 제거)해 업데이트 창에 표시.
+- 배포: ZIP 4개 엔트리(exe, updater, LICENSE, THIRD-PARTY-NOTICES.md). portable 62,188,029 B / lite 3,091,627 B.
+- 테스트 87개 통과(포매터 6개 포함). 릴리즈 노트: `docs/releases/v0.4.0.md`

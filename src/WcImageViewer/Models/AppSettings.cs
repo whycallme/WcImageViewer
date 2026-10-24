@@ -28,6 +28,11 @@ public sealed class AppSettings
     public Dictionary<string, string> Shortcuts { get; set; } = new();
     public List<string> Bookmarks { get; set; } = new();
 
+    public bool AutoCheckUpdates { get; set; } = true;
+    public string SkippedVersion { get; set; } = string.Empty;
+    public DateTime? LastUpdateCheckUtc { get; set; }
+    public UpdateRelease? PendingUpdate { get; set; }
+
     // Legacy setting from an earlier build; migrated to AutoFitWindowToImage.
     public bool FitWindowToImage { get; set; }
 

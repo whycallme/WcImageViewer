@@ -156,11 +156,26 @@
                             Click="OnRecentClick"
                             ToolTip="최근 항목"
                             AutomationProperties.Name="최근 항목" />
-                    <Button Style="{StaticResource IconButtonStyle}"
-                            Content="&#xE713;"
+                    <Button x:Name="SettingsButton"
+                            Style="{StaticResource IconButtonStyle}"
                             Click="OnSettingsClick"
                             ToolTip="설정 (F5 / Ctrl+,)"
-                            AutomationProperties.Name="설정" />
+                            AutomationProperties.Name="설정">
+                        <Grid Width="26" Height="26">
+                            <TextBlock Text="&#xE713;"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center" />
+                            <Ellipse x:Name="SettingsUpdateDot"
+                                     Width="6"
+                                     Height="6"
+                                     Fill="{DynamicResource AccentBrush}"
+                                     HorizontalAlignment="Right"
+                                     VerticalAlignment="Top"
+                                     Margin="0,3,3,0"
+                                     IsHitTestVisible="False"
+                                     Visibility="Collapsed" />
+                        </Grid>
+                    </Button>
                 </StackPanel>
 
                 <StackPanel Grid.Column="3"
