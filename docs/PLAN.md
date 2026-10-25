@@ -308,3 +308,10 @@ WPF 세부:
 - 폴더 정리: `UpdateInstaller`가 임베드 updater를 `%TEMP%\WcImageViewer\run-<guid>\`에 풀어 사용하고, 시작 시 앱 옆의 구 updater를 삭제(잠금 시 재시도, 실패 무시). `publish\lite`도 첫 실행 후 exe 하나.
 - ZIP 호환: v0.4.0 앱이 ZIP updater를 요구하므로 v0.4.1 ZIP은 4개 엔트리(exe, 호환 updater, LICENSE, notices) 유지. v0.4.2부터 3개 엔트리 예정.
 - 테스트 95개 통과(임베드 우선순위·updater 없음·구 updater 정리·404 메시지 포함). 릴리즈 노트: `docs/releases/v0.4.1.md`
+
+### v0.4.2 릴리즈 (2026-10-25)
+
+- 배포: updater를 csc로 컴파일해 앱 exe에 임베드만 하고 게시 폴더에 복사하지 않음. `scripts/publish.ps1`이 이전 updater를 삭제하고 ZIP 3개 엔트리(exe, LICENSE, THIRD-PARTY-NOTICES.md), updater 부재, 임베드 리소스, FileVersion 0.4.2.0을 검사. `publish\portable`은 exe 하나, `publish\lite`는 exe+CP.BAT.
+- 호환성: v0.4.1 이상은 3파일 ZIP으로 자동 업데이트(내장 updater 사용). v0.4.0 이하의 업데이트 코드는 ZIP updater를 요구하므로 v0.4.2는 1회 수동 설치가 필요하며, updater가 든 마지막 ZIP은 v0.4.1.
+- QA: 공개 v0.4.1 ZIP을 임시 폴더에 풀어 첫 실행(옆 updater 정리) → v0.4.2 자동 확인·설정 아이콘 점 → 종료 시 업데이트 창 → 3파일 ZIP 다운로드·검증 → v0.4.2 실행, FileVersion 0.4.2.0, 설정 유지, 폴더에 exe+문서 2개만 남는 것을 portable/lite 모두 확인.
+- 배포물: portable 62,189,153 B / lite 3,091,805 B. 테스트 95개 통과. 릴리즈 노트: `docs/releases/v0.4.2.md`

@@ -2,7 +2,7 @@
 
 Windows용 가볍고 빠른 이미지 뷰어입니다. 폴더와 압축파일(ZIP/CBZ, 7Z/CB7, RAR/CBR)을 열면 첫 이미지가 바로 표시되며, 설치 없이 실행할 수 있습니다.
 
-v0.4.1에서는 updater를 앱 exe에 내장해 배포 폴더에 `WcImageViewer.exe` 하나만 남습니다. 자동 업데이트 피드의 404도 해결됐습니다.
+v0.4.2에서는 updater를 앱 exe에 내장해 배포 폴더에 `WcImageViewer.exe` 하나만 남고, 릴리즈 ZIP도 exe와 문서 2개, 3개 파일로 줄었습니다.
 
 ## 다운로드
 
@@ -10,14 +10,14 @@ v0.4.1에서는 updater를 앱 exe에 내장해 배포 폴더에 `WcImageViewer.
 
 | 파일 | 크기 | 요구사항 |
 |---|---|---|
-| `WcImageViewer-portable-win-x64.zip` | 62,194,121 B (약 62MB) | 없음 (self-contained) |
-| `WcImageViewer-lite-win-x64.zip` | 3,096,221 B (약 3MB) | .NET 10 Desktop Runtime |
+| `WcImageViewer-portable-win-x64.zip` | 62,189,153 B (약 62MB) | 없음 (self-contained) |
+| `WcImageViewer-lite-win-x64.zip` | 3,091,805 B (약 3MB) | .NET 10 Desktop Runtime |
 
 압축을 풀고 `WcImageViewer.exe`를 실행하세요. 이미지 파일, 폴더, 압축파일을 인자로 넘기거나 창에 끌어다 놓아도 됩니다.
 
-ZIP에는 v0.4.0에서 올라오는 한 번의 업데이트를 위한 파일 4개가 들어 있습니다: `WcImageViewer.exe`, `WcImageViewer.Updater.exe`(v0.4.0 호환용), `LICENSE`, `THIRD-PARTY-NOTICES.md`. **v0.4.1 앱을 한 번 실행하면 옆의 `WcImageViewer.Updater.exe`가 삭제되어 `WcImageViewer.exe` 하나만 남습니다.** 이후 버전은 앱에 내장된 updater로 업데이트합니다. v0.4.2부터는 ZIP에도 updater를 넣지 않습니다.
+ZIP에는 파일 3개가 들어 있습니다: `WcImageViewer.exe`(updater 내장), `LICENSE`, `THIRD-PARTY-NOTICES.md`. 별도의 updater 파일은 없으며, 업데이트는 앱에 내장된 updater가 임시 폴더에 풀려 실행됩니다. 배포 폴더에도 updater가 남지 않습니다.
 
-> **v0.3.0 이하에서 올라오는 경우 v0.4.1은 한 번만 수동으로 설치해야 합니다.** v0.3.0 이하에는 자동 업데이트 코드가 없어 스스로를 갱신할 수 없습니다. ZIP을 풀어 덮어쓴 뒤에는 v0.4.1 이후 버전부터 자동 업데이트가 동작합니다. v0.4.0 → v0.4.1은 자동으로 업데이트됩니다.
+> **v0.4.1 이상에서 올라오면 자동으로 업데이트됩니다.** v0.4.0 이하는 v0.4.2를 한 번 수동으로 설치해야 합니다. v0.4.0 이하의 업데이트 코드는 ZIP 안의 `WcImageViewer.Updater.exe`를 요구하는데 v0.4.2 ZIP에는 없기 때문입니다. updater가 들어간 마지막 ZIP은 v0.4.1입니다. v0.3.0 이하는 자동 업데이트 코드가 없어 어느 버전이든 한 번은 수동 설치가 필요합니다.
 
 ```powershell
 WcImageViewer.exe "C:\images"
@@ -114,8 +114,8 @@ powershell -ExecutionPolicy Bypass -File scripts/publish.ps1
 
 - `publish/portable/WcImageViewer.exe`: self-contained 단일 exe (updater 내장)
 - `publish/lite/WcImageViewer.exe`: .NET 10 Desktop Runtime 필요 (updater 내장)
-- `publish/updater/WcImageViewer.Updater.exe`: .NET Framework 4.8 csc로 컴파일해 앱에 임베드하는 교체용 updater
-- `publish/*.zip`: 릴리즈용 압축 파일 (exe, v0.4.0 호환 updater, LICENSE, notices 4개). 앱 첫 실행 후 옆의 updater는 삭제됩니다.
+- updater는 `src/WcImageViewer.Updater/obj/publish`에 .NET Framework 4.8 csc로 컴파일해 앱에 임베드합니다. 배포 폴더에는 파일이 남지 않습니다.
+- `publish/*.zip`: 릴리즈용 압축 파일 (exe, LICENSE, THIRD-PARTY-NOTICES.md 3개).
 
 ## 라이선스
 
