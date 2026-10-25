@@ -40,18 +40,47 @@ if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $updaterExe)) {
     throw "WcImageViewer.Updater.exe 컴파일 실패 (csc 종료 코드 $LASTEXITCODE)."
 }
 
-dotnet publish $project -c $Configuration -p:PublishProfile=portable
+dotnet publish $project -c $Configuration -p:PublishProfile=portable -p:UpdaterResourcePath="$updaterExe"
 if ($LASTEXITCODE -ne 0) {
     throw "portable publish 실패 (종료 코드 $LASTEXITCODE)."
 }
 
-dotnet publish $project -c $Configuration -p:PublishProfile=lite
+dotnet publish $project -c $Configuration -p:PublishProfile=lite -p:UpdaterResourcePath="$updaterExe"
 if ($LASTEXITCODE -ne 0) {
     throw "lite publish 실패 (종료 코드 $LASTEXITCODE)."
 }
 
+# The app must carry the updater inside its own assembly; the copies below are
+# only for v0.4.0 compatibility and are deleted on first launch by the app.
+function Assert-EmbeddedUpdater([string]$path) {
+    if (-not (Test-Path -LiteralPath $path)) {
+        throw "임베드 확인 대상이 없습니다: $path"
+    }
+
+    $bytes = [System.IO.File]::ReadAllBytes($path)
+    $text = [System.Text.Encoding]::GetEncoding(28591).GetString($bytes)
+    if (-not $text.Contains("WcImageViewer.Updater.exe")) {
+        throw "임베드된 updater 리소스를 찾을 수 없습니다: $path"
+    }
+}
+
 $portableDirectory = Join-Path $publish "portable"
 $liteDirectory = Join-Path $publish "lite"
+$intermediateAssembly = Join-Path $root "src/WcImageViewer/obj/$Configuration/net10.0-windows/win-x64/WcImageViewer.dll"
+$expectedFileVersion = [regex]::Match(
+    [System.IO.File]::ReadAllText($project),
+    '<FileVersion>([^<]+)</FileVersion>').Groups[1].Value
+
+Assert-EmbeddedUpdater $intermediateAssembly
+Assert-EmbeddedUpdater (Join-Path $liteDirectory "WcImageViewer.exe")
+
+foreach ($exe in @((Join-Path $portableDirectory "WcImageViewer.exe"), (Join-Path $liteDirectory "WcImageViewer.exe"))) {
+    $fileVersion = (Get-Item -LiteralPath $exe).VersionInfo.FileVersion
+    if ($fileVersion -ne $expectedFileVersion) {
+        throw "예상하지 못한 FileVersion: $exe ($fileVersion != $expectedFileVersion)"
+    }
+}
+
 Copy-Item -LiteralPath $updaterExe -Destination (Join-Path $portableDirectory "WcImageViewer.Updater.exe") -Force
 Copy-Item -LiteralPath $updaterExe -Destination (Join-Path $liteDirectory "WcImageViewer.Updater.exe") -Force
 

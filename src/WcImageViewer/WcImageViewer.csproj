@@ -10,9 +10,9 @@
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <AssemblyName>WcImageViewer</AssemblyName>
     <RootNamespace>WcImageViewer</RootNamespace>
-    <Version>0.4.0</Version>
-    <AssemblyVersion>0.4.0.0</AssemblyVersion>
-    <FileVersion>0.4.0.0</FileVersion>
+    <Version>0.4.1</Version>
+    <AssemblyVersion>0.4.1.0</AssemblyVersion>
+    <FileVersion>0.4.1.0</FileVersion>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
 
@@ -26,6 +26,10 @@
   <ItemGroup>
     <Resource Include="Assets\app.ico" />
     <Resource Include="Assets\FileIcons\*.ico" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(UpdaterResourcePath)' != ''">
+    <EmbeddedResource Include="$(UpdaterResourcePath)" LogicalName="WcImageViewer.Updater.exe" />
   </ItemGroup>
 
 </Project>

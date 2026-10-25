@@ -1,4 +1,5 @@
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text.Json;
@@ -91,6 +92,12 @@ public sealed class UpdateService
                 request.Headers.TryAddWithoutValidation("X-GitHub-Api-Version", "2022-11-28");
 
                 using var response = await _httpClient.SendAsync(request, timeout.Token).ConfigureAwait(false);
+                if (response.StatusCode == HttpStatusCode.NotFound)
+                {
+                    throw new InvalidOperationException(
+                        "업데이트 피드를 찾을 수 없습니다. 저장소가 비공개이거나 릴리즈가 없습니다. (404)");
+                }
+
                 if (!response.IsSuccessStatusCode)
                 {
                     throw new InvalidOperationException($"업데이트 서버 응답 오류 ({(int)response.StatusCode})");

@@ -300,3 +300,11 @@ WPF 세부:
 - 릴리즈 노트: GitHub Markdown 본문을 `ReleaseNotesFormatter`로 평문 변환(`#`, `**`, 백틱, 링크, 표, 코드펜스 제거)해 업데이트 창에 표시.
 - 배포: ZIP 4개 엔트리(exe, updater, LICENSE, THIRD-PARTY-NOTICES.md). portable 62,188,029 B / lite 3,091,627 B.
 - 테스트 87개 통과(포매터 6개 포함). 릴리즈 노트: `docs/releases/v0.4.0.md`
+
+### v0.4.1 패치 (2026-10-25)
+
+- 업데이트 피드: 저장소 public 전환으로 404 해결. 404 응답은 "업데이트 피드를 찾을 수 없습니다. 저장소가 비공개이거나 릴리즈가 없습니다. (404)"로 안내.
+- updater 내장: `WcImageViewer.Updater.exe`를 `WcImageViewer.csproj`의 조건부 `EmbeddedResource`(LogicalName `WcImageViewer.Updater.exe`)로 넣고, `scripts/publish.ps1`이 csc 컴파일 후 `-p:UpdaterResourcePath`로 양쪽 프로파일에 임베드. 게시 스크립트가 임베드 리소스와 FileVersion 0.4.1.0을 검사.
+- 폴더 정리: `UpdateInstaller`가 임베드 updater를 `%TEMP%\WcImageViewer\run-<guid>\`에 풀어 사용하고, 시작 시 앱 옆의 구 updater를 삭제(잠금 시 재시도, 실패 무시). `publish\lite`도 첫 실행 후 exe 하나.
+- ZIP 호환: v0.4.0 앱이 ZIP updater를 요구하므로 v0.4.1 ZIP은 4개 엔트리(exe, 호환 updater, LICENSE, notices) 유지. v0.4.2부터 3개 엔트리 예정.
+- 테스트 95개 통과(임베드 우선순위·updater 없음·구 updater 정리·404 메시지 포함). 릴리즈 노트: `docs/releases/v0.4.1.md`

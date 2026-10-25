@@ -2,7 +2,7 @@
 
 Windows용 가볍고 빠른 이미지 뷰어입니다. 폴더와 압축파일(ZIP/CBZ, 7Z/CB7, RAR/CBR)을 열면 첫 이미지가 바로 표시되며, 설치 없이 실행할 수 있습니다.
 
-v0.4.0에서는 자동 업데이트 확인, 종료 시 업데이트 창, 네이티브 updater를 추가했습니다.
+v0.4.1에서는 updater를 앱 exe에 내장해 배포 폴더에 `WcImageViewer.exe` 하나만 남습니다. 자동 업데이트 피드의 404도 해결됐습니다.
 
 ## 다운로드
 
@@ -10,12 +10,14 @@ v0.4.0에서는 자동 업데이트 확인, 종료 시 업데이트 창, 네이�
 
 | 파일 | 크기 | 요구사항 |
 |---|---|---|
-| `WcImageViewer-portable-win-x64.zip` | 62,188,029 B (약 62MB) | 없음 (self-contained) |
-| `WcImageViewer-lite-win-x64.zip` | 3,091,627 B (약 3MB) | .NET 10 Desktop Runtime |
+| `WcImageViewer-portable-win-x64.zip` | 62,194,121 B (약 62MB) | 없음 (self-contained) |
+| `WcImageViewer-lite-win-x64.zip` | 3,096,221 B (약 3MB) | .NET 10 Desktop Runtime |
 
-압축을 풀고 `WcImageViewer.exe`를 실행하세요. 이미지 파일, 폴더, 압축파일을 인자로 넘기거나 창에 끌어다 놓아도 됩니다. ZIP에는 파일 4개가 들어 있습니다: `WcImageViewer.exe`, `WcImageViewer.Updater.exe`, `LICENSE`, `THIRD-PARTY-NOTICES.md`.
+압축을 풀고 `WcImageViewer.exe`를 실행하세요. 이미지 파일, 폴더, 압축파일을 인자로 넘기거나 창에 끌어다 놓아도 됩니다.
 
-> **v0.3.0 이하에서 올라오는 경우 이번 v0.4.0은 한 번만 수동으로 설치해야 합니다.** v0.3.0 이하에는 자동 업데이트 코드가 없어 스스로를 갱신할 수 없습니다. ZIP을 풀어 덮어쓴 뒤에는 v0.4.0 이후 버전부터 자동 업데이트가 동작합니다.
+ZIP에는 v0.4.0에서 올라오는 한 번의 업데이트를 위한 파일 4개가 들어 있습니다: `WcImageViewer.exe`, `WcImageViewer.Updater.exe`(v0.4.0 호환용), `LICENSE`, `THIRD-PARTY-NOTICES.md`. **v0.4.1 앱을 한 번 실행하면 옆의 `WcImageViewer.Updater.exe`가 삭제되어 `WcImageViewer.exe` 하나만 남습니다.** 이후 버전은 앱에 내장된 updater로 업데이트합니다. v0.4.2부터는 ZIP에도 updater를 넣지 않습니다.
+
+> **v0.3.0 이하에서 올라오는 경우 v0.4.1은 한 번만 수동으로 설치해야 합니다.** v0.3.0 이하에는 자동 업데이트 코드가 없어 스스로를 갱신할 수 없습니다. ZIP을 풀어 덮어쓴 뒤에는 v0.4.1 이후 버전부터 자동 업데이트가 동작합니다. v0.4.0 → v0.4.1은 자동으로 업데이트됩니다.
 
 ```powershell
 WcImageViewer.exe "C:\images"
@@ -42,7 +44,7 @@ WcImageViewer.exe "C:\images\photos.zip"
 - 여러 창으로 열기 / 하나의 창으로 열기 선택 (다음 실행부터 적용)
 - EXIF orientation, 라이트/다크 테마, High-DPI 대응
 - 자동 업데이트 확인(설정 아이콘 점), 종료 시 업데이트 창, 건너뛰기/다시 알림
-- 네이티브 updater(`WcImageViewer.Updater.exe`)로 ZIP 다운로드·SHA-256 검증·파일 교체
+- 앱 exe에 내장된 updater로 ZIP 다운로드·SHA-256 검증·파일 교체 (배포 폴더는 exe 하나)
 - 28px 얇은 커스텀 창 크롬, 파일명·이미지 개수 표시, 우측 컴팩트 툴바, Windows 11 작은 라운드 모서리
 - 확장자별 파일 아이콘과 앱 아이콘
 
@@ -110,10 +112,10 @@ docs/PLAN.md           개발 계획과 진행 상태
 powershell -ExecutionPolicy Bypass -File scripts/publish.ps1
 ```
 
-- `publish/portable/WcImageViewer.exe`: self-contained 단일 exe
-- `publish/lite/WcImageViewer.exe`: .NET 10 Desktop Runtime 필요
-- `publish/updater/WcImageViewer.Updater.exe`: .NET Framework 4.8 csc로 컴파일하는 교체용 updater
-- `publish/*.zip`: 릴리즈용 압축 파일 (exe, updater, LICENSE, notices 4개)
+- `publish/portable/WcImageViewer.exe`: self-contained 단일 exe (updater 내장)
+- `publish/lite/WcImageViewer.exe`: .NET 10 Desktop Runtime 필요 (updater 내장)
+- `publish/updater/WcImageViewer.Updater.exe`: .NET Framework 4.8 csc로 컴파일해 앱에 임베드하는 교체용 updater
+- `publish/*.zip`: 릴리즈용 압축 파일 (exe, v0.4.0 호환 updater, LICENSE, notices 4개). 앱 첫 실행 후 옆의 updater는 삭제됩니다.
 
 ## 라이선스
 

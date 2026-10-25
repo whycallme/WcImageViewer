@@ -106,6 +106,20 @@ public class UpdateServiceTests
     }
 
     [Fact]
+    public async Task CheckExplainsMissingFeedOn404()
+    {
+        var service = CreateService("{}", HttpStatusCode.NotFound);
+
+        var result = await service.CheckAsync(new Version(0, 4, 0), manual: true);
+
+        Assert.Equal(UpdateCheckStatus.Failed, result.Status);
+        Assert.Contains("업데이트 피드를 찾을 수 없습니다", result.Message);
+        Assert.Contains("404", result.Message);
+        Assert.Contains("비공개", result.Message);
+        Assert.NotNull(service.LastError);
+    }
+
+    [Fact]
     public async Task AutoCheckFailureIsSilent()
     {
         var service = CreateService("{ not json");

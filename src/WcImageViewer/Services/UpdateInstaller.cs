@@ -10,8 +10,12 @@ public static class UpdateInstaller
 {
     public const string AppFileName = "WcImageViewer.exe";
     public const string UpdaterFileName = "WcImageViewer.Updater.exe";
+    public const string EmbeddedUpdaterResourceName = "WcImageViewer.Updater.exe";
 
     public static string WorkRoot => Path.Combine(Path.GetTempPath(), "WcImageViewer");
+
+    public static bool HasEmbeddedUpdater =>
+        typeof(UpdateInstaller).Assembly.GetManifestResourceInfo(EmbeddedUpdaterResourceName) is not null;
 
     public static UpdatePackage PreparePackage(
         string zipPath,
@@ -33,8 +37,9 @@ public static class UpdateInstaller
 
             var appPath = FindFile(staging, AppFileName)
                 ?? throw new InvalidOperationException($"업데이트 패키지에 {AppFileName}가 없습니다.");
-            var updaterPath = FindFile(staging, UpdaterFileName)
-                ?? throw new InvalidOperationException($"업데이트 패키지에 {UpdaterFileName}가 없습니다.");
+
+            // An updater in the ZIP is optional since v0.4.1: the app carries its own.
+            var updaterPath = FindFile(staging, UpdaterFileName);
 
             return new UpdatePackage
             {
@@ -51,20 +56,64 @@ public static class UpdateInstaller
         }
     }
 
-    public static string ResolveUpdater(UpdatePackage package, string targetUpdaterPath)
+    public static string? ExtractEmbeddedUpdater(string? workRoot = null)
     {
-        if (!File.Exists(targetUpdaterPath))
+        try
         {
-            return package.UpdaterPath;
+            using var resource = typeof(UpdateInstaller).Assembly
+                .GetManifestResourceStream(EmbeddedUpdaterResourceName);
+            if (resource is null)
+            {
+                return null;
+            }
+
+            var directory = Path.Combine(
+                workRoot ?? WorkRoot,
+                "run-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+            var path = Path.Combine(directory, UpdaterFileName);
+            using var file = File.Create(path);
+            resource.CopyTo(file);
+            return path;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+
+    public static string ResolveUpdater(
+        UpdatePackage package,
+        string targetUpdaterPath,
+        Func<string?>? embeddedUpdaterProvider = null)
+    {
+        var embedded = (embeddedUpdaterProvider ?? (() => ExtractEmbeddedUpdater()))();
+        if (!string.IsNullOrEmpty(embedded) && File.Exists(embedded))
+        {
+            // The updater embedded in the installed app is always preferred: it is
+            // the version that matches this build and leaves no file next to the app.
+            return embedded;
         }
 
-        // Run the updater that belongs to the installed app, not the new one,
-        // so a broken new updater cannot break the update itself.
-        var runDirectory = Path.Combine(package.StagingDirectory, "run");
-        Directory.CreateDirectory(runDirectory);
-        var stagedUpdater = Path.Combine(runDirectory, UpdaterFileName);
-        File.Copy(targetUpdaterPath, stagedUpdater, overwrite: true);
-        return stagedUpdater;
+        if (File.Exists(targetUpdaterPath))
+        {
+            // Run the updater that belongs to the installed app, not the new one,
+            // so a broken new updater cannot break the update itself.
+            var runDirectory = Path.Combine(package.StagingDirectory, "run");
+            Directory.CreateDirectory(runDirectory);
+            var stagedUpdater = Path.Combine(runDirectory, UpdaterFileName);
+            File.Copy(targetUpdaterPath, stagedUpdater, overwrite: true);
+            return stagedUpdater;
+        }
+
+        if (package.UpdaterPath is { } packageUpdater && File.Exists(packageUpdater))
+        {
+            return packageUpdater;
+        }
+
+        throw new InvalidOperationException(
+            $"업데이트 프로그램({UpdaterFileName})을 찾을 수 없습니다. " +
+            "앱을 다시 설치하거나 릴리즈 ZIP을 직접 내려받아 주세요.");
     }
 
     public static IReadOnlyList<string> BuildArguments(
@@ -79,7 +128,9 @@ public static class UpdateInstaller
             "--target-app", targetAppPath,
             "--new-app", package.AppPath,
             "--target-updater", targetUpdaterPath,
-            "--new-updater", package.UpdaterPath,
+            // When the package has no updater, point at the target path so the
+            // updater skips copying itself and the folder stays single-exe.
+            "--new-updater", package.UpdaterPath ?? targetUpdaterPath,
             "--staging", package.StagingDirectory,
             "--log", package.LogPath
         };
@@ -140,9 +191,12 @@ public static class UpdateInstaller
                 return;
             }
 
-            foreach (var directory in Directory.EnumerateDirectories(WorkRoot, "update-*"))
+            foreach (var pattern in new[] { "update-*", "run-*" })
             {
-                TryDeleteDirectory(directory);
+                foreach (var directory in Directory.EnumerateDirectories(WorkRoot, pattern))
+                {
+                    TryDeleteDirectory(directory);
+                }
             }
         }
         catch (IOException)
@@ -151,6 +205,63 @@ public static class UpdateInstaller
         catch (UnauthorizedAccessException)
         {
         }
+    }
+
+    public static void CleanupLegacyUpdater()
+    {
+        if (!HasEmbeddedUpdater)
+        {
+            return;
+        }
+
+        var appPath = Environment.ProcessPath;
+        if (!string.IsNullOrEmpty(appPath))
+        {
+            CleanupLegacyUpdater(appPath, attempts: 20, delayMilliseconds: 1000);
+        }
+    }
+
+    public static bool CleanupLegacyUpdater(
+        string appPath,
+        int attempts = 20,
+        int delayMilliseconds = 1000)
+    {
+        var directory = Path.GetDirectoryName(appPath);
+        if (string.IsNullOrEmpty(directory))
+        {
+            return false;
+        }
+
+        var legacyUpdater = Path.Combine(directory, UpdaterFileName);
+        var maxAttempts = Math.Max(1, attempts);
+
+        for (var attempt = 0; attempt < maxAttempts; attempt++)
+        {
+            if (!File.Exists(legacyUpdater))
+            {
+                return true;
+            }
+
+            try
+            {
+                File.Delete(legacyUpdater);
+                return true;
+            }
+            catch (IOException)
+            {
+                // Still running from the previous update; retry briefly.
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
+
+            if (attempt + 1 < maxAttempts && delayMilliseconds > 0)
+            {
+                Thread.Sleep(delayMilliseconds);
+            }
+        }
+
+        return !File.Exists(legacyUpdater);
     }
 
     private static string? FindFile(string root, string fileName)

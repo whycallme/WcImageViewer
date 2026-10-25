@@ -17,6 +17,7 @@ public partial class App : Application
         DispatcherUnhandledException += OnDispatcherUnhandledException;
         _ = Task.Run(() => ArchiveCache.CleanupOld(TimeSpan.FromDays(7)));
         _ = Task.Run(UpdateInstaller.CleanupStale);
+        _ = Task.Run(UpdateInstaller.CleanupLegacyUpdater);
 
         var settingsService = SettingsService.LoadDefault();
         ThemeService.Apply(ThemeService.Parse(settingsService.Settings.Theme));

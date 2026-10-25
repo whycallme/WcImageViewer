@@ -169,14 +169,14 @@ public class SettingsServiceTests
             var checkedAt = new DateTime(2026, 10, 24, 3, 4, 5, DateTimeKind.Utc);
             var service = SettingsService.ForPath(path);
             service.Settings.AutoCheckUpdates = false;
-            service.Settings.SkippedVersion = " v0.4.1 ";
+            service.Settings.SkippedVersion = " v0.5.0 ";
             service.Settings.LastUpdateCheckUtc = checkedAt;
             service.Settings.PendingUpdate = new UpdateRelease
             {
-                Tag = "v0.4.1",
-                Name = "Release v0.4.1",
+                Tag = "v0.5.0",
+                Name = "Release v0.5.0",
                 Body = "notes",
-                HtmlUrl = "https://example.test/releases/v0.4.1",
+                HtmlUrl = "https://example.test/releases/v0.5.0",
                 AssetName = UpdateService.PortableAssetName,
                 AssetUrl = "https://example.test/WcImageViewer-portable-win-x64.zip",
                 AssetSize = 2048,
@@ -187,14 +187,14 @@ public class SettingsServiceTests
             var loaded = SettingsService.ForPath(path);
 
             Assert.False(loaded.Settings.AutoCheckUpdates);
-            Assert.Equal("0.4.1", loaded.Settings.SkippedVersion);
+            Assert.Equal("0.5.0", loaded.Settings.SkippedVersion);
             Assert.Equal(checkedAt, loaded.Settings.LastUpdateCheckUtc);
             var pending = loaded.Settings.PendingUpdate;
             Assert.NotNull(pending);
-            Assert.Equal("v0.4.1", pending.Tag);
-            Assert.Equal("Release v0.4.1", pending.Name);
+            Assert.Equal("v0.5.0", pending.Tag);
+            Assert.Equal("Release v0.5.0", pending.Name);
             Assert.Equal("notes", pending.Body);
-            Assert.Equal("https://example.test/releases/v0.4.1", pending.HtmlUrl);
+            Assert.Equal("https://example.test/releases/v0.5.0", pending.HtmlUrl);
             Assert.Equal(UpdateService.PortableAssetName, pending.AssetName);
             Assert.Equal(2048, pending.AssetSize);
             Assert.Equal("sha256:0123456789abcdef", pending.AssetDigest);
@@ -268,25 +268,25 @@ public class SettingsServiceTests
         {
             var path = Path.Combine(folder, "settings.json");
             var service = SettingsService.ForPath(path);
-            service.Settings.SkippedVersion = "0.4.1";
+            service.Settings.SkippedVersion = "0.5.0";
             service.Settings.PendingUpdate = new UpdateRelease
             {
-                Tag = "v0.4.1",
+                Tag = "v0.5.0",
                 AssetUrl = "https://example.test/WcImageViewer-portable-win-x64.zip",
                 AssetDigest = "sha256:0123456789abcdef"
             };
             service.Save();
 
             var skipped = SettingsService.ForPath(path);
-            Assert.Equal("0.4.1", skipped.Settings.SkippedVersion);
-            Assert.Equal("v0.4.1", skipped.Settings.PendingUpdate?.Tag);
+            Assert.Equal("0.5.0", skipped.Settings.SkippedVersion);
+            Assert.Equal("v0.5.0", skipped.Settings.PendingUpdate?.Tag);
 
             skipped.Settings.SkippedVersion = string.Empty;
             skipped.Save();
 
             var reask = SettingsService.ForPath(path);
             Assert.Equal(string.Empty, reask.Settings.SkippedVersion);
-            Assert.Equal("v0.4.1", reask.Settings.PendingUpdate?.Tag);
+            Assert.Equal("v0.5.0", reask.Settings.PendingUpdate?.Tag);
         }
         finally
         {
