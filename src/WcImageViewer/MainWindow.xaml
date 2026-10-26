@@ -218,13 +218,13 @@
                     VerticalAlignment="Top"
                     Margin="14"
                     MaxWidth="760"
-                    Background="#B3000000"
+                    Background="{DynamicResource OverlayBackgroundBrush}"
                     CornerRadius="4"
                     Padding="10,6"
                     IsHitTestVisible="False"
                     Visibility="Collapsed">
                 <TextBlock x:Name="InfoOverlayText"
-                           Foreground="#F2F2F2"
+                           Foreground="{DynamicResource OverlayTextBrush}"
                            FontSize="12"
                            TextWrapping="Wrap"
                            IsHitTestVisible="False" />
@@ -233,17 +233,17 @@
                     Panel.ZIndex="20"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center"
-                    Background="#CC000000"
+                    Background="{DynamicResource NoticeBackgroundBrush}"
                     CornerRadius="4"
                     Padding="24,10"
                     IsHitTestVisible="False"
                     Visibility="Collapsed"
                     Opacity="0">
                 <Border.Effect>
-                    <DropShadowEffect Color="#000000" BlurRadius="10" ShadowDepth="0" Opacity="0.8" />
+                    <DropShadowEffect Color="Black" BlurRadius="10" ShadowDepth="0" Opacity="0.8" />
                 </Border.Effect>
                 <TextBlock x:Name="NoticeText"
-                           Foreground="#FFFFFF"
+                           Foreground="{DynamicResource NoticeTextBrush}"
                            FontSize="20"
                            FontWeight="SemiBold"
                            TextAlignment="Center" />

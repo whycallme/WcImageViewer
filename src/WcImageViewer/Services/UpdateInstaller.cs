@@ -51,7 +51,7 @@ public static class UpdateInstaller
         }
         catch
         {
-            TryDeleteDirectory(staging);
+            DirectoryCleanup.TryDeleteDirectory(staging);
             throw;
         }
     }
@@ -195,7 +195,7 @@ public static class UpdateInstaller
             {
                 foreach (var directory in Directory.EnumerateDirectories(WorkRoot, pattern))
                 {
-                    TryDeleteDirectory(directory);
+                    DirectoryCleanup.TryDeleteDirectory(directory);
                 }
             }
         }
@@ -294,20 +294,4 @@ public static class UpdateInstaller
         return $"updater-{tag}-{DateTime.UtcNow:yyyyMMdd-HHmmss}-{Guid.NewGuid():N}.log";
     }
 
-    private static void TryDeleteDirectory(string path)
-    {
-        try
-        {
-            if (Directory.Exists(path))
-            {
-                Directory.Delete(path, recursive: true);
-            }
-        }
-        catch (IOException)
-        {
-        }
-        catch (UnauthorizedAccessException)
-        {
-        }
-    }
 }

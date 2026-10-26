@@ -139,7 +139,6 @@ src/WcImageViewer/
     ZoomPanControl.xaml / .cs     줌/팬/맞춤/전체화면 탐색
     ThumbnailStrip.xaml / .cs     가상화된 썸네일 목록
 tests/WcImageViewer.Tests/        xUnit 테스트
-design/                           아이콘 시안과 생성 스크립트
 docs/                             개발 계획 문서
 scripts/publish.ps1               portable/lite 게시
 ```
@@ -244,7 +243,8 @@ WPF 세부:
 - [x] Canvas 기반 렌더링으로 큰 이미지가 잘리지 않고 전체 표시
 - [x] 300 DPI 등 임베디드 DPI와 무관하게 픽셀 크기로 표시, 줌 중심 보정
 - [x] 표시 배율 직접 입력(5~800%), 표시되는 이미지 크기에 맞춰 창 조정(기본 동작, W/버튼)
-- [x] 세로로 긴 이미지는 창 폭을 최소값, 높이를 작업 영역 최대로 맞춤- [x] Tab 이미지 정보 오버레이, F2 이름 바꾸기, Del 삭제(확인/휴지통 설정)
+- [x] 세로로 긴 이미지는 창 폭을 최소값, 높이를 작업 영역 최대로 맞춤
+- [x] Tab 이미지 정보 오버레이, F2 이름 바꾸기, Del 삭제(확인/휴지통 설정)
 - [x] Ctrl+E 편집 앱으로 열기, Ctrl+C 이미지 복사
 - [x] 설정에서 편집 앱 선택, 확장자별 기본 앱 연결
 - [x] 설정 창 카테고리(일반/보기·창/파일·편집/단축키/파일 연결)
@@ -315,3 +315,7 @@ WPF 세부:
 - 호환성: v0.4.1 이상은 3파일 ZIP으로 자동 업데이트(내장 updater 사용). v0.4.0 이하의 업데이트 코드는 ZIP updater를 요구하므로 v0.4.2는 1회 수동 설치가 필요하며, updater가 든 마지막 ZIP은 v0.4.1.
 - QA: 공개 v0.4.1 ZIP을 임시 폴더에 풀어 첫 실행(옆 updater 정리) → v0.4.2 자동 확인·설정 아이콘 점 → 종료 시 업데이트 창 → 3파일 ZIP 다운로드·검증 → v0.4.2 실행, FileVersion 0.4.2.0, 설정 유지, 폴더에 exe+문서 2개만 남는 것을 portable/lite 모두 확인.
 - 배포물: portable 62,189,153 B / lite 3,091,805 B. 테스트 95개 통과. 릴리즈 노트: `docs/releases/v0.4.2.md`
+### v0.4.3 릴리즈 (2026-10-26)
+
+- 정리: 사용하지 않던 design/ 시안 제거, DirectoryCleanup 공용화, IImageSource reopen factory/file path 추가, 테마 브러시 추출, 게시 프로파일 공통 props 추출, 테스트 임시 폴더 헬퍼 통일.
+- 배포물: portable 62,189,150 B / lite 3,091,811 B. 테스트 94개 통과. 릴리즈 노트: docs/releases/v0.4.3.md

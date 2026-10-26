@@ -80,6 +80,10 @@ public sealed class ArchiveImageSource : IImageSource
             FileOptions.Asynchronous | FileOptions.SequentialScan);
     }
 
+    public Func<Stream>? CreateReopenFactory(int index) => null;
+
+    public string? GetFilePath(int index) => null;
+
     public void Dispose()
     {
         if (_disposed)

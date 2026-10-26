@@ -593,9 +593,7 @@ public partial class MainWindow : Window
         try
         {
             using var stream = await source.OpenEntryAsync(_index, cancellationToken);
-            var reopen = source is FolderImageSource
-                ? (Func<Stream>)(() => ImageLoader.OpenFile(entry.Key))
-                : null;
+            var reopen = source.CreateReopenFactory(_index);
             var document = await Task.Run(
                 () => ImageLoader.LoadDocument(stream, reopen, Path.GetExtension(entry.Name), cancellationToken),
                 cancellationToken);
@@ -716,9 +714,7 @@ public partial class MainWindow : Window
         try
         {
             using var stream = await source.OpenEntryAsync(index, cancellationToken);
-            var reopen = source is FolderImageSource
-                ? (Func<Stream>)(() => ImageLoader.OpenFile(entry.Key))
-                : null;
+            var reopen = source.CreateReopenFactory(index);
             var document = await Task.Run(
                 () => ImageLoader.LoadDocument(stream, reopen, Path.GetExtension(entry.Name), cancellationToken),
                 cancellationToken);
@@ -1339,10 +1335,10 @@ public partial class MainWindow : Window
 
     private void OpenBookmarks()
     {
-        string? currentPath = _source is FolderImageSource &&
+        string? currentPath = _source is not null &&
                               _index >= 0 &&
                               _index < _source.Count
-            ? _source.GetEntry(_index).Key
+            ? _source.GetFilePath(_index)
             : null;
 
         var dialog = new BookmarkWindow(_settings.Bookmarks, currentPath)
@@ -1422,9 +1418,10 @@ public partial class MainWindow : Window
         var builder = new StringBuilder();
         builder.AppendLine(entry.DisplayName);
 
-        if (_source is FolderImageSource)
+        var filePath = _source.GetFilePath(_index);
+        if (filePath is not null)
         {
-            builder.AppendLine(entry.Key);
+            builder.AppendLine(filePath);
         }
         else
         {

@@ -101,7 +101,6 @@ dotnet run --project src/WcImageViewer
 ```text
 src/WcImageViewer/     WPF 앱 (Models, Services, Controls, 창)
 tests/                 xUnit 테스트
-design/                아이콘/UI 시안과 생성 스크립트
 scripts/publish.ps1    portable/lite 게시 및 zip 생성
 docs/PLAN.md           개발 계획과 진행 상태
 ```

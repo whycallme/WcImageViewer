@@ -42,14 +42,11 @@ if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $updaterExe)) {
     throw "WcImageViewer.Updater.exe 컴파일 실패 (csc 종료 코드 $LASTEXITCODE)."
 }
 
-dotnet publish $project -c $Configuration -p:PublishProfile=portable -p:UpdaterResourcePath="$updaterExe"
-if ($LASTEXITCODE -ne 0) {
-    throw "portable publish 실패 (종료 코드 $LASTEXITCODE)."
-}
-
-dotnet publish $project -c $Configuration -p:PublishProfile=lite -p:UpdaterResourcePath="$updaterExe"
-if ($LASTEXITCODE -ne 0) {
-    throw "lite publish 실패 (종료 코드 $LASTEXITCODE)."
+foreach ($profile in @("portable", "lite")) {
+    dotnet publish $project -c $Configuration -p:PublishProfile=$profile -p:UpdaterResourcePath="$updaterExe"
+    if ($LASTEXITCODE -ne 0) {
+        throw "$profile publish 실패 (종료 코드 $LASTEXITCODE)."
+    }
 }
 
 $portableDirectory = Join-Path $publish "portable"

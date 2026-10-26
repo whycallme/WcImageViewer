@@ -121,20 +121,6 @@ public sealed class SettingsService
             settings.Version = 2;
         }
 
-        if (settings.FitWindowToImage)
-        {
-            // Older builds auto-resized the window on every image, which could
-            // leave a tiny window and an unexpected 100% zoom. Reset that state,
-            // then use the new sane auto-fit behavior.
-            settings.FitWindowToImage = false;
-            settings.DefaultZoomPercent = 0;
-            settings.WindowWidth = 1200;
-            settings.WindowHeight = 800;
-            settings.WindowLeft = null;
-            settings.WindowTop = null;
-            settings.AutoFitWindowToImage = true;
-        }
-
         settings.RecentPaths ??= new List<string>();
         settings.RecentPaths = settings.RecentPaths
             .Where(path => !string.IsNullOrWhiteSpace(path))

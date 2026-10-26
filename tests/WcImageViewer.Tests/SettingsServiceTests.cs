@@ -9,7 +9,7 @@ public class SettingsServiceTests
     [Fact]
     public void SavesAndLoadsSettings()
     {
-        var folder = CreateTempFolder();
+        var folder = TestTemp.CreateFolder("wciv_settings");
         try
         {
             var path = Path.Combine(folder, "settings.json");
@@ -43,7 +43,6 @@ public class SettingsServiceTests
             Assert.True(loaded.Settings.SlideshowRandom);
             Assert.False(loaded.Settings.ThumbnailsVisible);
             Assert.Equal(120, loaded.Settings.DefaultZoomPercent);
-            Assert.False(loaded.Settings.FitWindowToImage);
             Assert.False(loaded.Settings.AutoFitWindowToImage);
             Assert.False(loaded.Settings.DoNotUpscaleSmallImages);
             Assert.False(loaded.Settings.ConfirmDelete);
@@ -68,7 +67,7 @@ public class SettingsServiceTests
     [Fact]
     public void NewPlaybackSettingsDefaultToPreviousBehavior()
     {
-        var folder = CreateTempFolder();
+        var folder = TestTemp.CreateFolder("wciv_settings");
         try
         {
             var path = Path.Combine(folder, "settings.json");
@@ -90,7 +89,7 @@ public class SettingsServiceTests
     [Fact]
     public void ClampsIntervalAndIgnoresBrokenJson()
     {
-        var folder = CreateTempFolder();
+        var folder = TestTemp.CreateFolder("wciv_settings");
         try
         {
             var path = Path.Combine(folder, "settings.json");
@@ -112,38 +111,9 @@ public class SettingsServiceTests
     }
 
     [Fact]
-    public void MigratesLegacyAutoWindowFitSetting()
-    {
-        var folder = CreateTempFolder();
-        try
-        {
-            var path = Path.Combine(folder, "settings.json");
-            var service = SettingsService.ForPath(path);
-            service.Settings.Version = 0;
-            service.Settings.FitWindowToImage = true;
-            service.Settings.DefaultZoomPercent = 100;
-            service.Settings.ThumbnailsVisible = true;
-            service.Save();
-
-            var loaded = SettingsService.ForPath(path);
-
-            Assert.False(loaded.Settings.FitWindowToImage);
-            Assert.True(loaded.Settings.AutoFitWindowToImage);
-            Assert.False(loaded.Settings.ThumbnailsVisible);
-            Assert.Equal(0, loaded.Settings.DefaultZoomPercent);
-            Assert.Equal(1200, loaded.Settings.WindowWidth);
-            Assert.Equal(800, loaded.Settings.WindowHeight);
-        }
-        finally
-        {
-            Directory.Delete(folder, recursive: true);
-        }
-    }
-
-    [Fact]
     public void NewUpdateSettingsDefaultToAutomaticChecks()
     {
-        var folder = CreateTempFolder();
+        var folder = TestTemp.CreateFolder("wciv_settings");
         try
         {
             var service = SettingsService.ForPath(Path.Combine(folder, "settings.json"));
@@ -162,7 +132,7 @@ public class SettingsServiceTests
     [Fact]
     public void SavesAndLoadsUpdateState()
     {
-        var folder = CreateTempFolder();
+        var folder = TestTemp.CreateFolder("wciv_settings");
         try
         {
             var path = Path.Combine(folder, "settings.json");
@@ -211,7 +181,7 @@ public class SettingsServiceTests
     [InlineData("not-a-version")]
     public void NormalizeDropsPendingThatIsNotNewer(string tag)
     {
-        var folder = CreateTempFolder();
+        var folder = TestTemp.CreateFolder("wciv_settings");
         try
         {
             var path = Path.Combine(folder, "settings.json");
@@ -237,7 +207,7 @@ public class SettingsServiceTests
     [Fact]
     public void NormalizeKeepsPendingNewerThanCurrentVersion()
     {
-        var folder = CreateTempFolder();
+        var folder = TestTemp.CreateFolder("wciv_settings");
         try
         {
             var path = Path.Combine(folder, "settings.json");
@@ -263,7 +233,7 @@ public class SettingsServiceTests
     [Fact]
     public void SkippingVersionKeepsPendingForReask()
     {
-        var folder = CreateTempFolder();
+        var folder = TestTemp.CreateFolder("wciv_settings");
         try
         {
             var path = Path.Combine(folder, "settings.json");
@@ -294,12 +264,4 @@ public class SettingsServiceTests
         }
     }
 
-    private static string CreateTempFolder()
-    {
-        var folder = Path.Combine(
-            Path.GetTempPath(),
-            "wciv_settings_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(folder);
-        return folder;
-    }
 }

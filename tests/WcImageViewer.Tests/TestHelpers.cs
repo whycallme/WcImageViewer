@@ -46,6 +46,16 @@ internal static class StaRunner
     }
 }
 
+internal static class TestTemp
+{
+    public static string CreateFolder(string prefix = "wc_image_viewer_tests")
+    {
+        var path = Path.Combine(Path.GetTempPath(), prefix + "_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(path);
+        return path;
+    }
+}
+
 internal static class TestImages
 {
     public static void CreatePng(string path, int width, int height, byte value = 0)

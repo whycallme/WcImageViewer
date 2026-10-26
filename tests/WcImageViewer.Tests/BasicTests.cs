@@ -27,8 +27,7 @@ public class ImageFileEnumeratorTests
     [Fact]
     public void FiltersImagesAndSortsNaturally()
     {
-        var folder = Path.Combine(Path.GetTempPath(), "wc_image_viewer_tests_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(folder);
+        var folder = TestTemp.CreateFolder();
 
         try
         {

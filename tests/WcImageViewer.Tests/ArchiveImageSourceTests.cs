@@ -12,7 +12,7 @@ public class ArchiveImageSourceTests
     [Fact]
     public async Task OpensZipAndDecodesEntry()
     {
-        var root = CreateRoot();
+        var root = TestTemp.CreateFolder("wciv_archive");
         try
         {
             var imagesFolder = Path.Combine(root, "images");
@@ -49,7 +49,7 @@ public class ArchiveImageSourceTests
     [Fact]
     public async Task OpensSevenZipAndExtractsEntries()
     {
-        var root = CreateRoot();
+        var root = TestTemp.CreateFolder("wciv_archive");
         var archivePath = Path.Combine(root, "test.7z");
         string cacheDirectory = null!;
 
@@ -94,13 +94,6 @@ public class ArchiveImageSourceTests
             TryDeleteDirectory(cacheDirectory);
             Directory.Delete(root, recursive: true);
         }
-    }
-
-    private static string CreateRoot()
-    {
-        var root = Path.Combine(Path.GetTempPath(), "wciv_archive_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(root);
-        return root;
     }
 
     private static void TryDeleteDirectory(string path)

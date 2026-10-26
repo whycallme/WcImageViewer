@@ -233,7 +233,7 @@ public sealed class UpdateService
         }
         catch
         {
-            TryDeleteDirectory(directory);
+            DirectoryCleanup.TryDeleteDirectory(directory);
             throw;
         }
     }
@@ -371,23 +371,6 @@ public sealed class UpdateService
         }
 
         return value;
-    }
-
-    private static void TryDeleteDirectory(string path)
-    {
-        try
-        {
-            if (Directory.Exists(path))
-            {
-                Directory.Delete(path, recursive: true);
-            }
-        }
-        catch (IOException)
-        {
-        }
-        catch (UnauthorizedAccessException)
-        {
-        }
     }
 
     private void RaiseStateChanged()

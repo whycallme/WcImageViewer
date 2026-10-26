@@ -10,7 +10,7 @@ public class UpdateInstallerTests
     [Fact]
     public void PreparePackageFindsFilesInNestedFolder()
     {
-        var root = CreateTempRoot();
+        var root = TestTemp.CreateFolder("wciv_installer_tests");
         try
         {
             var zip = CreateZip(
@@ -43,7 +43,7 @@ public class UpdateInstallerTests
     [Fact]
     public void PreparePackageWithoutUpdaterIsAllowed()
     {
-        var root = CreateTempRoot();
+        var root = TestTemp.CreateFolder("wciv_installer_tests");
         try
         {
             var zip = CreateZip(
@@ -69,7 +69,7 @@ public class UpdateInstallerTests
     [Fact]
     public void PreparePackageWithoutAppFails()
     {
-        var root = CreateTempRoot();
+        var root = TestTemp.CreateFolder("wciv_installer_tests");
         try
         {
             var zip = CreateZip(root, ("WcImageViewer.Updater.exe", new byte[] { 1 }));
@@ -88,7 +88,7 @@ public class UpdateInstallerTests
     [Fact]
     public void ResolveUpdaterPrefersInstalledUpdater()
     {
-        var root = CreateTempRoot();
+        var root = TestTemp.CreateFolder("wciv_installer_tests");
         try
         {
             var staging = Path.Combine(root, "staging");
@@ -122,7 +122,7 @@ public class UpdateInstallerTests
     [Fact]
     public void ResolveUpdaterPrefersEmbeddedUpdater()
     {
-        var root = CreateTempRoot();
+        var root = TestTemp.CreateFolder("wciv_installer_tests");
         try
         {
             var staging = Path.Combine(root, "staging");
@@ -160,7 +160,7 @@ public class UpdateInstallerTests
     [Fact]
     public void ResolveUpdaterFailsWhenNoUpdaterExistsAnywhere()
     {
-        var root = CreateTempRoot();
+        var root = TestTemp.CreateFolder("wciv_installer_tests");
         try
         {
             var staging = Path.Combine(root, "staging");
@@ -188,7 +188,7 @@ public class UpdateInstallerTests
     [Fact]
     public void ResolveUpdaterFallsBackToPackageUpdater()
     {
-        var root = CreateTempRoot();
+        var root = TestTemp.CreateFolder("wciv_installer_tests");
         try
         {
             var staging = Path.Combine(root, "staging");
@@ -218,7 +218,7 @@ public class UpdateInstallerTests
     [Fact]
     public void CleanupLegacyUpdaterDeletesUpdaterNextToApp()
     {
-        var root = CreateTempRoot();
+        var root = TestTemp.CreateFolder("wciv_installer_tests");
         try
         {
             var appPath = Path.Combine(root, UpdateInstaller.AppFileName);
@@ -241,7 +241,7 @@ public class UpdateInstallerTests
     [Fact]
     public void CleanupLegacyUpdaterIgnoresLockedUpdater()
     {
-        var root = CreateTempRoot();
+        var root = TestTemp.CreateFolder("wciv_installer_tests");
         try
         {
             var appPath = Path.Combine(root, UpdateInstaller.AppFileName);
@@ -269,7 +269,7 @@ public class UpdateInstallerTests
     [Fact]
     public void CleanupLegacyUpdaterSucceedsWhenUpdaterIsAlreadyGone()
     {
-        var root = CreateTempRoot();
+        var root = TestTemp.CreateFolder("wciv_installer_tests");
         try
         {
             var appPath = Path.Combine(root, UpdateInstaller.AppFileName);
@@ -340,16 +340,6 @@ public class UpdateInstallerTests
 
         Assert.Equal(targetUpdater, pairs["--new-updater"]);
         Assert.Equal(targetUpdater, pairs["--target-updater"]);
-    }
-
-    private static string CreateTempRoot()
-    {
-        var root = Path.Combine(
-            Path.GetTempPath(),
-            "wciv-installer-tests",
-            Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(root);
-        return root;
     }
 
     private static string CreateZip(

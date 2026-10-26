@@ -41,8 +41,7 @@ public class TilingTests
     [InlineData(8)]
     public async Task TilesMatchTheOrientedSource(int orientation)
     {
-        var folder = Path.Combine(Path.GetTempPath(), "wc_image_viewer_tests_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(folder);
+        var folder = TestTemp.CreateFolder();
 
         try
         {
@@ -97,8 +96,7 @@ public class TilingTests
     [Fact]
     public async Task TilesComposeIntoTheOrientedImageForEveryOrientation()
     {
-        var folder = Path.Combine(Path.GetTempPath(), "wc_image_viewer_tests_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(folder);
+        var folder = TestTemp.CreateFolder();
 
         try
         {
@@ -161,8 +159,7 @@ public class TilingTests
     [Fact]
     public async Task DecodesTilesAndReportsOrientedPositions()
     {
-        var folder = Path.Combine(Path.GetTempPath(), "wc_image_viewer_tests_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(folder);
+        var folder = TestTemp.CreateFolder();
 
         try
         {
@@ -198,8 +195,7 @@ public class TilingTests
     [Fact]
     public async Task DownscaledTileFitsItsOriginalImageArea()
     {
-        var folder = Path.Combine(Path.GetTempPath(), "wc_image_viewer_tests_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(folder);
+        var folder = TestTemp.CreateFolder();
 
         try
         {

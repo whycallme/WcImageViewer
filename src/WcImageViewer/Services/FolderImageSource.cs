@@ -36,6 +36,10 @@ public sealed class FolderImageSource : IImageSource
         return Task.FromResult(stream);
     }
 
+    public Func<Stream>? CreateReopenFactory(int index) => () => ImageLoader.OpenFile(_entries[index].Key);
+
+    public string? GetFilePath(int index) => _entries[index].Key;
+
     public int IndexOf(string filePath)
     {
         for (var i = 0; i < _entries.Length; i++)

@@ -33,8 +33,5 @@ public sealed class AppSettings
     public DateTime? LastUpdateCheckUtc { get; set; }
     public UpdateRelease? PendingUpdate { get; set; }
 
-    // Legacy setting from an earlier build; migrated to AutoFitWindowToImage.
-    public bool FitWindowToImage { get; set; }
-
     public List<string> RecentPaths { get; set; } = new();
 }

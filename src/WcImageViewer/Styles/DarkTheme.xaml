@@ -21,6 +21,10 @@
     <SolidColorBrush x:Key="ChipBorderBrush" Color="#2D2D31" />
     <SolidColorBrush x:Key="ThumbnailDockBrush" Color="#E6151518" />
     <SolidColorBrush x:Key="CheckMarkBrush" Color="#161618" />
+    <SolidColorBrush x:Key="OverlayBackgroundBrush" Color="#B3000000" />
+    <SolidColorBrush x:Key="OverlayTextBrush" Color="#F2F2F2" />
+    <SolidColorBrush x:Key="NoticeBackgroundBrush" Color="#CC000000" />
+    <SolidColorBrush x:Key="NoticeTextBrush" Color="#FFFFFF" />
 
     <!-- Caption icon button: 28x28, transparent, 4px radius, accent focus ring -->
     <Style x:Key="IconButtonStyle" TargetType="Button">
@@ -92,45 +96,7 @@
         </Setter>
     </Style>
 
-    <Style x:Key="CloseWindowButtonStyle" TargetType="Button">
-        <Setter Property="Width" Value="46" />
-        <Setter Property="Height" Value="28" />
-        <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-        <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
-        <Setter Property="FontSize" Value="10" />
-        <Setter Property="Focusable" Value="False" />
-        <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True" />
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="Button">
-                    <Border x:Name="Bd" Background="{TemplateBinding Background}">
-                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
-                    </Border>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource CloseHoverBrush}" />
-                            <Setter Property="Foreground" Value="White" />
-                        </Trigger>
-                        <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource CloseHoverBrush}" />
-                            <Setter Property="Foreground" Value="White" />
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
-
-    <Style x:Key="TitleBarCloseButtonStyle" TargetType="Button">
-        <Setter Property="Width" Value="46" />
-        <Setter Property="Height" Value="28" />
-        <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-        <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
-        <Setter Property="FontSize" Value="10" />
-        <Setter Property="Focusable" Value="False" />
-        <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True" />
+    <Style x:Key="CloseWindowButtonStyle" TargetType="Button" BasedOn="{StaticResource WindowButtonStyle}">
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">

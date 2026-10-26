@@ -14,4 +14,8 @@ public interface IImageSource : IDisposable
     ImageEntry GetEntry(int index);
 
     Task<Stream> OpenEntryAsync(int index, CancellationToken cancellationToken);
+
+    Func<Stream>? CreateReopenFactory(int index);
+
+    string? GetFilePath(int index);
 }

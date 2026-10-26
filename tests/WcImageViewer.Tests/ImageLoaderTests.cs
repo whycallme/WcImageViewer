@@ -8,8 +8,7 @@ public class ImageLoaderTests
     [Fact]
     public void LoadsGeneratedPng()
     {
-        var folder = Path.Combine(Path.GetTempPath(), "wc_image_viewer_tests_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(folder);
+        var folder = TestTemp.CreateFolder();
 
         try
         {
@@ -59,8 +58,7 @@ public class ImageLoaderTests
     [Fact]
     public void LoadsThumbnailOnWorkerThread()
     {
-        var folder = Path.Combine(Path.GetTempPath(), "wc_image_viewer_tests_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(folder);
+        var folder = TestTemp.CreateFolder();
 
         try
         {
