@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
@@ -432,6 +433,16 @@ public partial class MainWindow : Window
                 return;
             }
 
+            if (IsBandizipTempPath(path))
+            {
+                var resolvedArchive = TryResolveArchiveFromBandizip(path);
+                if (resolvedArchive is not null)
+                {
+                    await OpenArchiveAsync(resolvedArchive, generation, Path.GetFileName(path));
+                    return;
+                }
+            }
+
             if (ArchiveExtensions.Contains(Path.GetExtension(path)))
             {
                 await OpenArchiveAsync(path, generation);
@@ -449,6 +460,76 @@ public partial class MainWindow : Window
         catch (Exception ex) when (generation == _openGeneration)
         {
             ShowEmpty($"열 수 없습니다.\n{ex.Message}");
+        }
+    }
+
+    private static bool IsBandizipTempPath(string path)
+    {
+        var directory = Path.GetDirectoryName(path);
+        if (string.IsNullOrWhiteSpace(directory))
+        {
+            return false;
+        }
+
+        return directory.IndexOf("\\Temp\\BNZ.", StringComparison.OrdinalIgnoreCase) >= 0;
+    }
+
+    private static string? TryResolveArchiveFromBandizip(string path)
+    {
+        try
+        {
+            var currentPid = Environment.ProcessId;
+            var script =
+                "$cur=" + currentPid + "; " +
+                "$p=(Get-CimInstance Win32_Process -Filter \"ProcessId=$cur\").ParentProcessId; " +
+                "$c=(Get-CimInstance Win32_Process -Filter \"ProcessId=$p\").CommandLine; " +
+                "Write-Output ($p.ToString() + '|' + $c)";
+
+            var psi = new ProcessStartInfo("powershell.exe", "-NoProfile -Command \"" + script + "\"")
+            {
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(psi);
+            if (process is null)
+            {
+                return null;
+            }
+
+            var output = process.StandardOutput.ReadToEnd();
+            process.WaitForExit(5000);
+            if (string.IsNullOrWhiteSpace(output))
+            {
+                return null;
+            }
+
+            var separator = output.IndexOf('|');
+            if (separator < 0)
+            {
+                return null;
+            }
+
+            var commandLine = output[(separator + 1)..].Trim();
+            foreach (Match match in Regex.Matches(
+                         commandLine,
+                         "[\"'](?<path>[^\"']+\\.(?:zip|7z|rar|cbz|tar|gz|bz2|tgz|xz))[\"']",
+                         RegexOptions.IgnoreCase))
+            {
+                var candidate = match.Groups["path"].Value;
+                if (File.Exists(candidate))
+                {
+                    return Path.GetFullPath(candidate);
+                }
+            }
+
+            return null;
+        }
+        catch
+        {
+            return null;
         }
     }
 
@@ -499,7 +580,7 @@ public partial class MainWindow : Window
         AddRecent(file);
     }
 
-    private async Task OpenArchiveAsync(string path, int generation)
+    private async Task OpenArchiveAsync(string path, int generation, string? initialEntry = null)
     {
         ShowStatus("압축파일 여는 중...");
 
@@ -531,7 +612,23 @@ public partial class MainWindow : Window
             return;
         }
 
-        await SetSourceAsync(source, 0);
+        var startIndex = 0;
+        if (!string.IsNullOrWhiteSpace(initialEntry))
+        {
+            for (var i = 0; i < source.Count; i++)
+            {
+                if (string.Equals(
+                        Path.GetFileName(source.GetEntry(i).Name),
+                        initialEntry,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    startIndex = i;
+                    break;
+                }
+            }
+        }
+
+        await SetSourceAsync(source, startIndex);
         AddRecent(path);
     }
 
