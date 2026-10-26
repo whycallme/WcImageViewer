@@ -272,9 +272,13 @@ public partial class MainWindow : Window
             return;
         }
 
+        // Always re-check on startup so a release published after a cached
+        // pending update is not missed (e.g. 0.4.3 cached, then 0.4.4 ships).
+        // The 24-hour throttle only suppresses the network call when there is
+        // no pending update to act on.
         var hasRecentCheck = _settings.LastUpdateCheckUtc is DateTime lastCheck &&
             DateTime.UtcNow - lastCheck < TimeSpan.FromHours(24);
-        if (hasRecentCheck && _settings.PendingUpdate is not null)
+        if (hasRecentCheck && _settings.PendingUpdate is null)
         {
             return;
         }

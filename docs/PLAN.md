@@ -319,3 +319,9 @@ WPF 세부:
 
 - 정리: 사용하지 않던 design/ 시안 제거, DirectoryCleanup 공용화, IImageSource reopen factory/file path 추가, 테마 브러시 추출, 게시 프로파일 공통 props 추출, 테스트 임시 폴더 헬퍼 통일.
 - 배포물: portable 62,189,150 B / lite 3,091,811 B. 테스트 94개 통과. 릴리즈 노트: docs/releases/v0.4.3.md
+
+### v0.4.4 릴리즈 (2026-10-26)
+
+- 업데이터 검증: 15초 생존 확인 대신 WaitForInputIdle로 UI 준비 확인. 사용자가 업데이트 직후 창을 닫아도 롤백하지 않음.
+- 배포물: portable 62,189,078 B / lite 3,091,774 B.
+

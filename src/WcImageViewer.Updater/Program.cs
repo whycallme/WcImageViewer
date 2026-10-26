@@ -195,12 +195,14 @@ namespace WcImageViewer.Updater
 
                 Log(logPath, "새 앱 시작: PID " + process.Id.ToString(CultureInfo.InvariantCulture));
 
-                if (process.WaitForExit(SurvivalMilliseconds))
+                // Wait until the app reaches an idle state (UI ready) instead of
+                // requiring it to stay alive for 15 seconds. The old check treated
+                // a user closing the window within 15 seconds as a startup failure.
+                if (!process.WaitForInputIdle(SurvivalMilliseconds))
                 {
                     throw new InvalidOperationException(
                         "새 앱이 " + (SurvivalMilliseconds / 1000).ToString(CultureInfo.InvariantCulture) +
-                        "초 안에 종료되었습니다 (종료 코드 " +
-                        process.ExitCode.ToString(CultureInfo.InvariantCulture) + ").");
+                        "초 안에 준비되지 않았습니다.");
                 }
             }
 
