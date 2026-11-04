@@ -118,6 +118,9 @@ public partial class MainWindow : Window
         };
         ContentRendered += (_, _) =>
         {
+            WindowCornerService.Apply(this);
+            InvalidateVisual();
+            UpdateLayout();
             Viewer.Focus();
             Keyboard.Focus(Viewer);
         };
@@ -138,7 +141,6 @@ public partial class MainWindow : Window
     protected override void OnSourceInitialized(EventArgs e)
     {
         base.OnSourceInitialized(e);
-        WindowCornerService.Apply(this);
         if (PresentationSource.FromVisual(this) is HwndSource source)
         {
             source.AddHook(WndProc);
