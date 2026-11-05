@@ -1155,14 +1155,39 @@ public partial class ListViewWindow : Window
         }
     }
 
-    private void SlideshowButton_Click(object sender, RoutedEventArgs e)
+    private async void SlideshowButton_Click(object sender, RoutedEventArgs e)
     {
-        (Application.Current.MainWindow as MainWindow)?.ToggleSlideshow();
+        var main = Application.Current.MainWindow as MainWindow;
+        if (main is null) return;
+
+        if (main.IsSlideshowRunning)
+        {
+            main.ToggleSlideshow();
+            ShowNotice("슬라이드쇼 중지");
+            return;
+        }
+
+        if (thumbList.SelectedPaths.Count > 0)
+        {
+            var selectedPath = thumbList.SelectedPaths[thumbList.SelectedPaths.Count - 1];
+            await main.OpenPathAndStartSlideshowAsync(selectedPath);
+            ShowNotice("슬라이드쇼 시작");
+            main.Show();
+            main.Activate();
+            Close();
+        }
+        else
+        {
+            main.ToggleSlideshow();
+            main.Show();
+            main.Activate();
+            ShowNotice(main.IsSlideshowRunning ? "슬라이드쇼 시작" : "슬라이드쇼 중지");
+        }
     }
 
     private void SettingsButton_Click(object sender, RoutedEventArgs e)
     {
-        (Application.Current.MainWindow as MainWindow)?.OpenSettings();
+        (Application.Current.MainWindow as MainWindow)?.OpenSettings(this);
     }
 
     private void AddressBox_KeyDown(object sender, KeyEventArgs e)

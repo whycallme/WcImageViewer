@@ -2053,7 +2053,7 @@ public partial class MainWindow : Window
         OpenSettings();
     }
 
-    public void OpenSettings()
+    public void OpenSettings(Window? owner = null)
     {
         var dialog = new SettingsWindow(
             _settings.SlideshowIntervalSeconds,
@@ -2080,7 +2080,7 @@ public partial class MainWindow : Window
             savedWidth: _settings.SettingsWindowWidth,
             savedHeight: _settings.SettingsWindowHeight)
         {
-            Owner = this
+            Owner = owner ?? this
         };
 
         var accepted = dialog.ShowDialog() == true;
@@ -2265,6 +2265,15 @@ public partial class MainWindow : Window
         }
     }
 
+    /// <summary>슬라이드쇼가 실행 중인지 여부 (리스트뷰 등 외부 창에서 상태 피드백용).</summary>
+    public bool IsSlideshowRunning => _slideshowTimer.IsEnabled;
+
+    public async Task OpenPathAndStartSlideshowAsync(string path)
+    {
+        await OpenPathAsync(path);
+        ToggleSlideshow();
+    }
+
     public void ToggleSlideshow()
     {
         if (_source is null || _source.Count == 0)
@@ -2425,6 +2434,25 @@ public partial class MainWindow : Window
         if (TryExecuteShortcut(e))
         {
             e.Handled = true;
+            return;
+        }
+
+        // 사용자 키맵에 Up/Down 이 등록돼 있지 않아도 위/아래 화살표는 항상 이전/다음 이미지로 이동한다.
+        if (!inTextInput &&
+            (Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Alt | ModifierKeys.Shift | ModifierKeys.Windows))
+                == ModifierKeys.None)
+        {
+            var key = e.Key == Key.System ? e.SystemKey : e.Key;
+            if (key == Key.Up)
+            {
+                Navigate(-1);
+                e.Handled = true;
+            }
+            else if (key == Key.Down)
+            {
+                Navigate(1);
+                e.Handled = true;
+            }
         }
     }
 
