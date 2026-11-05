@@ -2548,7 +2548,7 @@ public partial class MainWindow : Window
             DispatcherPriority.Normal);
     }
 
-    private void CompleteUpdatePrompt(UpdateRelease release)
+    internal void CompleteUpdatePrompt(UpdateRelease release)
     {
         try
         {
@@ -2564,6 +2564,8 @@ public partial class MainWindow : Window
                 return;
             }
 
+            _settings.PendingUpdate = null;
+            SaveUpdateState();
             _allowClose = true;
             Close();
         }

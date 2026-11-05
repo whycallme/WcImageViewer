@@ -189,12 +189,40 @@ public partial class ListViewWindow : Window
             _folderCts?.Dispose();
 
             try { if (_settingsService != null) { _settingsService.Save(); } else { _saveSettings(); } } catch { }
-            try { _ = UpdateService.Instance.CheckAsync(AppVersion.Current, manual: false); } catch { }
+            _ = PromptUpdateOnCloseAsync();
         };
 
         RestoreLayout();
 
         Loaded += OnLoaded;
+    }
+
+    private async Task PromptUpdateOnCloseAsync()
+    {
+        UpdateCheckResult result;
+        try
+        {
+            result = await UpdateService.Instance.CheckAsync(AppVersion.Current, manual: false);
+        }
+        catch
+        {
+            return;
+        }
+
+        if (result.Status != UpdateCheckStatus.Available || result.Release == null)
+        {
+            return;
+        }
+
+        var main = Application.Current.MainWindow as MainWindow;
+        if (main == null)
+        {
+            return;
+        }
+
+        main.Show();
+        main.Activate();
+        main.CompleteUpdatePrompt(result.Release);
     }
 
     private void RestoreLayout()
