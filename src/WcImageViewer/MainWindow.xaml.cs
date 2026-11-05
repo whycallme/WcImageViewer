@@ -54,6 +54,7 @@ public partial class MainWindow : Window
     private ResizeMode _oldResizeMode;
     private Rect _oldBounds;
     private WindowChrome? _windowChrome;
+    private Window? _listWindow;
 
     private readonly SettingsService _settingsService;
     private readonly AppSettings _settings;
@@ -96,8 +97,10 @@ public partial class MainWindow : Window
         Viewer.ZoomChanged += (_, _) => UpdateZoomText();
         Viewer.NavigateRequested += (_, delta) => Navigate(delta);
         Viewer.WindowDragRequested += (_, _) => BeginWindowDrag();
+        Viewer.ListViewRequested += (_, _) => OpenListView();
         Viewer.LostMouseCapture += (_, _) => _isWindowDragging = false;
         Thumbnails.SelectionChanged += OnThumbnailSelected;
+        PreviewMouseDown += OnWindowPreviewMouseDown;
         _animationTimer.Tick += (_, _) => AdvanceAnimation();
         _slideshowTimer.Tick += (_, _) => AdvanceSlideshow();
         _noticeTimer.Tick += (_, _) => HideNavigationNotice();
@@ -105,10 +108,10 @@ public partial class MainWindow : Window
         UpdateService.Instance.Initialize(_settings.PendingUpdate, _settings.LastUpdateCheckUtc);
         UpdateService.Instance.StateChanged += OnUpdateStateChanged;
         ApplyUpdateIndicator();
+        _ = StartUpdateChecksAsync();
         Loaded += (_, _) =>
         {
             Viewer.Focus();
-            _ = StartUpdateChecksAsync();
         };
         _thumbnailHideTimer.Tick += (_, _) =>
         {
@@ -126,7 +129,14 @@ public partial class MainWindow : Window
         };
     }
 
-    public void OpenPath(string path) => _ = OpenPathAsync(path);
+    public void OpenPath(string path)
+    {
+        if (_listWindow is not null)
+        {
+            try { _listWindow.Close(); } catch { }
+        }
+        _ = OpenPathAsync(path);
+    }
 
     protected override void OnActivated(EventArgs e)
     {
@@ -1254,16 +1264,35 @@ public partial class MainWindow : Window
 
     private bool TryExecuteShortcut(KeyEventArgs e)
     {
-        foreach (var shortcut in _shortcuts)
+        var action = ShortcutService.FindAction(_shortcuts, e);
+        if (action is null)
         {
-            if (ShortcutService.Matches(shortcut.Value, e))
-            {
-                ExecuteShortcut(shortcut.Key);
-                return true;
-            }
+            return false;
         }
 
-        return false;
+        if (ShortcutService.IsUnavailableIn(action, ShortcutService.Screen.Viewer))
+        {
+            ShowNotice(ShortcutService.GetUnavailableMessage(action));
+            return true;
+        }
+
+        ExecuteShortcut(action);
+        return true;
+    }
+
+    private void OnWindowPreviewMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        // 마우스 뒤로/앞으로 버튼 = 키맵의 Back/Forward (뷰어에서는 이전/다음 이미지).
+        if (e.ChangedButton == MouseButton.XButton1)
+        {
+            ExecuteShortcut("Back");
+            e.Handled = true;
+        }
+        else if (e.ChangedButton == MouseButton.XButton2)
+        {
+            ExecuteShortcut("Forward");
+            e.Handled = true;
+        }
     }
 
     private void ExecuteShortcut(string actionId)
@@ -1289,9 +1318,11 @@ public partial class MainWindow : Window
                 SaveCurrentAs();
                 break;
             case "Previous":
+            case "Back":
                 Navigate(-1);
                 break;
             case "Next":
+            case "Forward":
                 Navigate(1);
                 break;
             case "First":
@@ -1334,6 +1365,9 @@ public partial class MainWindow : Window
             case "Info":
                 ToggleInfoOverlay();
                 break;
+            case "ListView":
+                OpenListView();
+                break;
             case "Rename":
                 _ = RenameCurrentAsync();
                 break;
@@ -1349,6 +1383,142 @@ public partial class MainWindow : Window
             case "CloseWindow":
                 Close();
                 break;
+        }
+    }
+
+    public void OpenListView()
+    {
+        if (_listWindow is not null)
+        {
+            try { _listWindow.Activate(); } catch { }
+            return;
+        }
+
+        string? folder = null;
+        string? initialPath = null;
+
+        if (_source is FolderImageSource)
+        {
+            var path = _index >= 0 && _index < _source.Count
+                ? _source.GetFilePath(_index)
+                : null;
+            if (path is null)
+            {
+                ShowStatus("폴더 이미지에서만 사용할 수 있습니다.");
+                return;
+            }
+
+            folder = Path.GetDirectoryName(path);
+            initialPath = path;
+            if (string.IsNullOrWhiteSpace(folder))
+            {
+                return;
+            }
+        }
+        else
+        {
+            foreach (var recent in _settings.RecentPaths)
+            {
+                if (string.IsNullOrWhiteSpace(recent))
+                {
+                    continue;
+                }
+
+                if (Directory.Exists(recent))
+                {
+                    folder = recent;
+                    break;
+                }
+
+                if (File.Exists(recent))
+                {
+                    var parent = Path.GetDirectoryName(recent);
+                    if (!string.IsNullOrWhiteSpace(parent) && Directory.Exists(parent))
+                    {
+                        folder = parent;
+                        initialPath = recent;
+                        break;
+                    }
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(folder))
+            {
+                var pictures = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
+                if (Directory.Exists(pictures))
+                {
+                    folder = pictures;
+                }
+                else
+                {
+                    var documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                    if (Directory.Exists(documents))
+                    {
+                        folder = documents;
+                    }
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(folder))
+            {
+                return;
+            }
+        }
+
+        Window? win = null;
+        try
+        {
+            win = new ListViewWindow(
+                _settings,
+                () =>
+                {
+                    try
+                    {
+                        _settingsService.Save();
+                    }
+                    catch (IOException)
+                    {
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                    }
+                },
+                folder,
+                initialPath);
+
+            var listViewWindow = (ListViewWindow)win;
+            _listWindow = win;
+
+            win.Closed += (_, _) =>
+            {
+                _listWindow = null;
+                string? open = listViewWindow.OpenInViewerPath;
+                if (!string.IsNullOrWhiteSpace(open))
+                {
+                    try { Show(); } catch { }
+                    if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
+                    try { Activate(); } catch { }
+                    _ = OpenPathAsync(open!);
+                    return;
+                }
+
+                try { _allowClose = true; } catch { }
+                try { Close(); } catch { try { Application.Current?.Shutdown(); } catch { } }
+            };
+
+            Hide();
+            win.Show();
+            win.Activate();
+        }
+        catch (Exception ex)
+        {
+            try { Show(); } catch { }
+            if (win is not null)
+            {
+                try { win.Close(); } catch { }
+            }
+            _listWindow = null;
+            MessageBox.Show(this, ex.ToString(), "리스트뷰 오류", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
@@ -1470,6 +1640,12 @@ public partial class MainWindow : Window
             return;
         }
 
+        ShowNotice(message);
+    }
+
+    /// <summary>닫기 버튼 없는 자동 소멸 토스트 (NoticeBorder).</summary>
+    private void ShowNotice(string message)
+    {
         NoticeText.Text = message;
         NoticeBorder.BeginAnimation(OpacityProperty, null);
         NoticeBorder.Opacity = 1;
@@ -1874,6 +2050,11 @@ public partial class MainWindow : Window
 
     private void OnSettingsClick(object sender, RoutedEventArgs e)
     {
+        OpenSettings();
+    }
+
+    public void OpenSettings()
+    {
         var dialog = new SettingsWindow(
             _settings.SlideshowIntervalSeconds,
             _settings.SlideshowRepeat,
@@ -1892,12 +2073,30 @@ public partial class MainWindow : Window
             _settings.Shortcuts,
             _settings.Theme,
             _settings.AutoCheckUpdates,
-            _settings.SkippedVersion)
+            _settings.SkippedVersion,
+            _settings.ListViewScope,
+            _settings.UiFontSize,
+            _settings.ListViewItemFontSize,
+            savedWidth: _settings.SettingsWindowWidth,
+            savedHeight: _settings.SettingsWindowHeight)
         {
             Owner = this
         };
 
-        if (dialog.ShowDialog() != true)
+        var accepted = dialog.ShowDialog() == true;
+        dialog.CopySizeTo(_settings);
+        try
+        {
+            _settingsService.Save();
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
+
+        if (!accepted)
         {
             return;
         }
@@ -1921,9 +2120,12 @@ public partial class MainWindow : Window
         _settings.UseRecycleBin = dialog.UseRecycleBin;
         _settings.EditorPath = dialog.EditorPath;
         _settings.SingleWindowMode = dialog.SingleWindowMode;
+        _settings.ListViewScope = dialog.ListViewScope;
         _settings.WrapNavigation = dialog.WrapNavigation;
         _settings.ShowNavigationNotice = dialog.ShowNavigationNotice;
         _settings.Theme = dialog.Theme;
+        _settings.UiFontSize = dialog.UiFontSize;
+        _settings.ListViewItemFontSize = dialog.ListViewItemFontSize;
         _settings.AutoCheckUpdates = dialog.AutoCheckUpdates;
         if (dialog.ClearSkippedVersion)
         {
@@ -1942,10 +2144,7 @@ public partial class MainWindow : Window
 
         _settings.AssociatedExtensions = dialog.SelectedExtensions.ToList();
         _settings.AssociateFileTypes = _settings.AssociatedExtensions.Count > 0;
-        _settings.Shortcuts = dialog.SelectedShortcuts.ToDictionary(
-            pair => pair.Key,
-            pair => pair.Value,
-            StringComparer.Ordinal);
+        _settings.Shortcuts = ShortcutService.ToCustomMap(dialog.SelectedShortcuts);
         _shortcuts = ShortcutService.GetEffective(_settings.Shortcuts);
 
         try
@@ -1966,6 +2165,13 @@ public partial class MainWindow : Window
                 "파일 연결",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
+        }
+
+        FontSize = _settings.UiFontSize;
+        if (_listWindow is ListViewWindow listViewWindow)
+        {
+            listViewWindow.FontSize = _settings.UiFontSize;
+            listViewWindow.thumbList.ItemFontSize = _settings.ListViewItemFontSize;
         }
 
         _thumbnailsHover = false;
@@ -2030,12 +2236,14 @@ public partial class MainWindow : Window
 
     private void OnOpenFileClick(object sender, RoutedEventArgs e) => ShowOpenFileDialog();
 
+    internal static readonly string OpenFileFilter = "이미지/압축 파일|*.jpg;*.jpeg;*.jpe;*.png;*.bmp;*.gif;*.tif;*.tiff;*.ico;*.webp;*.avif;*.heic;*.heif;*.zip;*.cbz;*.7z;*.cb7;*.rar;*.cbr|모든 파일|*.*";
+
     private void ShowOpenFileDialog()
     {
         var dialog = new OpenFileDialog
         {
             Title = "이미지 또는 압축파일 열기",
-            Filter = "이미지/압축 파일|*.jpg;*.jpeg;*.jpe;*.png;*.bmp;*.gif;*.tif;*.tiff;*.ico;*.webp;*.avif;*.heic;*.heif;*.zip;*.cbz;*.7z;*.cb7;*.rar;*.cbr|모든 파일|*.*"
+            Filter = OpenFileFilter
         };
 
         if (dialog.ShowDialog(this) == true)
@@ -2057,7 +2265,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void ToggleSlideshow()
+    public void ToggleSlideshow()
     {
         if (_source is null || _source.Count == 0)
         {
@@ -2203,7 +2411,13 @@ public partial class MainWindow : Window
 
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
-        if (Keyboard.FocusedElement is TextBox)
+        var inTextInput = Keyboard.FocusedElement is TextBox
+                       || e.OriginalSource is System.Windows.Controls.Primitives.TextBoxBase
+                       || e.OriginalSource is System.Windows.Controls.ComboBox;
+
+        // 입력 필드에서는 문자·편집 키(Enter, Esc, Ctrl+C 등)를 필드에 남기고,
+        // F키와 Alt 조합만 keymap 으로 처리한다.
+        if (inTextInput && ShortcutService.IsTextEditingKey(e))
         {
             return;
         }

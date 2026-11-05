@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using Microsoft.Win32;
+using WcImageViewer.Models;
 using WcImageViewer.Services;
 
 namespace WcImageViewer;
@@ -25,7 +26,8 @@ public partial class SettingsWindow : Window
     private readonly Dictionary<string, TextBox> _shortcutBoxes = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Button> _shortcutButtons = new(StringComparer.Ordinal);
     private readonly Dictionary<string, string> _shortcutGestures;
-    private readonly AppTheme _originalTheme;
+    private static readonly AppThemeMode[] ThemeModes = { AppThemeMode.Light, AppThemeMode.Dark, AppThemeMode.System };
+    private readonly AppThemeMode _originalMode;
     private string? _capturingActionId;
     private string _skippedVersion = string.Empty;
     private bool _initializing = true;
@@ -50,13 +52,26 @@ public partial class SettingsWindow : Window
         IReadOnlyDictionary<string, string> shortcuts,
         string theme,
         bool autoCheckUpdates,
-        string skippedVersion)
+        string skippedVersion,
+        ListPrefsScope listViewScope,
+        double uiFontSize = 12,
+        double listViewItemFontSize = 12,
+        double? savedWidth = null,
+        double? savedHeight = null)
     {
         InitializeComponent();
         SourceInitialized += (_, _) => WindowCornerService.Apply(this);
 
-        _originalTheme = ThemeService.Parse(theme);
-        Theme = ThemeService.ToSetting(_originalTheme);
+        var size = SettingsWindowSizing.Resolve(
+            savedWidth,
+            savedHeight,
+            SystemParameters.WorkArea.Width,
+            SystemParameters.WorkArea.Height);
+        Width = size.Width;
+        Height = size.Height;
+
+        _originalMode = ThemeService.ParseMode(theme);
+        Theme = ThemeService.ToSetting(_originalMode);
 
         var intervals = Intervals.ToList();
         if (!intervals.Contains(slideshowIntervalSeconds))
@@ -94,6 +109,9 @@ public partial class SettingsWindow : Window
         WindowModeBox.ItemsSource = new[] { "여러 창으로 열기", "하나의 창으로 열기" };
         WindowModeBox.SelectedIndex = singleWindowMode ? 1 : 0;
 
+        ListViewScopeBox.ItemsSource = new[] { "전역(모든 폴더 공통)", "폴더별" };
+        ListViewScopeBox.SelectedIndex = listViewScope == ListPrefsScope.PerFolder ? 1 : 0;
+
         NavigationWrapBox.ItemsSource = new[] { "첫 파일로 가기", "아무것도 안 하기" };
         NavigationWrapBox.SelectedIndex = wrapNavigation ? 0 : 1;
         NavigationNoticeCheck.IsChecked = showNavigationNotice;
@@ -101,8 +119,8 @@ public partial class SettingsWindow : Window
         _shortcutGestures = ShortcutService.GetEffective(shortcuts);
         BuildShortcutRows();
 
-        ThemeBox.ItemsSource = new[] { "다크", "라이트" };
-        ThemeBox.SelectedIndex = _originalTheme == AppTheme.Light ? 1 : 0;
+        ThemeBox.ItemsSource = new[] { "라이트", "다크", "시스템" };
+        ThemeBox.SelectedIndex = Array.IndexOf(ThemeModes, _originalMode);
 
         CategoryList.SelectedIndex = 0;
         ShowCategory(0);
@@ -112,6 +130,9 @@ public partial class SettingsWindow : Window
         _skippedVersion = skippedVersion?.Trim() ?? string.Empty;
         UpdateService.Instance.StateChanged += OnUpdateStateChanged;
         RefreshUpdateSection();
+
+        UiFontSizeBox.SelectedIndex = ClosestFontIndex(uiFontSize);
+        ListViewFontSizeBox.SelectedIndex = ClosestFontIndex(listViewItemFontSize);
 
         _initializing = false;
     }
@@ -140,6 +161,8 @@ public partial class SettingsWindow : Window
 
     public bool SingleWindowMode { get; private set; }
 
+    public ListPrefsScope ListViewScope { get; private set; } = ListPrefsScope.Global;
+
     public bool WrapNavigation { get; private set; } = true;
 
     public bool ShowNavigationNotice { get; private set; } = true;
@@ -147,11 +170,39 @@ public partial class SettingsWindow : Window
     public IReadOnlyDictionary<string, string> SelectedShortcuts =>
         new Dictionary<string, string>(_shortcutGestures);
 
-    public string Theme { get; private set; } = "Dark";
+    public string Theme { get; private set; } = "System";
 
     public bool AutoCheckUpdates { get; private set; } = true;
 
     public bool ClearSkippedVersion { get; private set; }
+
+    public double UiFontSize { get; private set; } = 12;
+
+    public double ListViewItemFontSize { get; private set; } = 12;
+
+    /// <summary>닫을 때의 창 너비 (호출 측이 설정에 저장한다).</summary>
+    public double SavedWidth { get; private set; }
+
+    /// <summary>닫을 때의 창 높이 (호출 측이 설정에 저장한다).</summary>
+    public double SavedHeight { get; private set; }
+
+    /// <summary>닫힌 뒤 창 크기를 설정 객체에 옮긴다. 값이 없으면 아무것도 바꾸지 않는다.</summary>
+    public void CopySizeTo(AppSettings settings)
+    {
+        if (SavedWidth <= 0 || SavedHeight <= 0)
+        {
+            return;
+        }
+
+        settings.SettingsWindowWidth = SavedWidth;
+        settings.SettingsWindowHeight = SavedHeight;
+    }
+
+    private AppThemeMode SelectedThemeMode()
+    {
+        var index = ThemeBox.SelectedIndex;
+        return index >= 0 && index < ThemeModes.Length ? ThemeModes[index] : AppThemeMode.System;
+    }
 
     private void OnThemeChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -160,7 +211,7 @@ public partial class SettingsWindow : Window
             return;
         }
 
-        ThemeService.Apply(ThemeBox.SelectedIndex == 1 ? AppTheme.Light : AppTheme.Dark);
+        ThemeService.ApplyMode(SelectedThemeMode());
     }
 
     private void OnCategoryChanged(object sender, SelectionChangedEventArgs e)
@@ -536,6 +587,23 @@ public partial class SettingsWindow : Window
         }
     }
 
+    private static int ClosestFontIndex(double value)
+    {
+        int[] choices = { 8, 9, 10, 11, 12, 13, 14, 16, 18, 20, 24 };
+        int best = 0;
+        double bestDiff = double.MaxValue;
+        for (int i = 0; i < choices.Length; i++)
+        {
+            double diff = Math.Abs(choices[i] - value);
+            if (diff < bestDiff)
+            {
+                bestDiff = diff;
+                best = i;
+            }
+        }
+        return best;
+    }
+
     private void OnOkClick(object sender, RoutedEventArgs e)
     {
         IntervalSeconds = IntervalBox.SelectedItem is int interval ? interval : 3;
@@ -555,13 +623,16 @@ public partial class SettingsWindow : Window
             .Select(pair => pair.Key)
             .ToArray();
         SingleWindowMode = WindowModeBox.SelectedIndex == 1;
+        ListViewScope = ListViewScopeBox.SelectedIndex == 1 ? ListPrefsScope.PerFolder : ListPrefsScope.Global;
         WrapNavigation = NavigationWrapBox.SelectedIndex == 0;
         ShowNavigationNotice = NavigationNoticeCheck.IsChecked == true;
         AutoCheckUpdates = AutoCheckUpdatesCheck.IsChecked == true;
-        Theme = ThemeBox.SelectedIndex == 1
-            ? ThemeService.ToSetting(AppTheme.Light)
-            : ThemeService.ToSetting(AppTheme.Dark);
+        Theme = ThemeService.ToSetting(SelectedThemeMode());
         _themeAccepted = true;
+
+        UiFontSize = double.TryParse(UiFontSizeBox.SelectedItem?.ToString(), out var ui) ? ui : 12;
+        ListViewItemFontSize = double.TryParse(ListViewFontSizeBox.SelectedItem?.ToString(), out var lv) ? lv : 12;
+
         DialogResult = true;
     }
 
@@ -570,10 +641,16 @@ public partial class SettingsWindow : Window
         _closed = true;
         UpdateService.Instance.StateChanged -= OnUpdateStateChanged;
 
-        if (!_themeAccepted && ThemeService.Current != _originalTheme)
+        if (!_themeAccepted && ThemeService.Mode != _originalMode)
         {
-            ThemeService.Apply(_originalTheme);
+            ThemeService.ApplyMode(_originalMode);
         }
+
+        var bounds = WindowState == WindowState.Normal
+            ? new Rect(0, 0, Width, Height)
+            : RestoreBounds;
+        SavedWidth = bounds.Width;
+        SavedHeight = bounds.Height;
 
         base.OnClosed(e);
     }

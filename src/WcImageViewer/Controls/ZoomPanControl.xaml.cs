@@ -58,6 +58,8 @@ public partial class ZoomPanControl : UserControl
 
     public event EventHandler? WindowDragRequested;
 
+    public event EventHandler? ListViewRequested;
+
     public double Zoom => _zoom;
 
     /// <summary>When false, fit-to-window never enlarges an image past 100%.</summary>
@@ -407,13 +409,20 @@ public partial class ZoomPanControl : UserControl
 
         if (e.ClickCount == 2)
         {
-            if (_isFit)
+            if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
             {
-                ActualSize();
+                if (_isFit)
+                {
+                    ActualSize();
+                }
+                else
+                {
+                    FitToWindow();
+                }
             }
             else
             {
-                FitToWindow();
+                ListViewRequested?.Invoke(this, EventArgs.Empty);
             }
 
             e.Handled = true;

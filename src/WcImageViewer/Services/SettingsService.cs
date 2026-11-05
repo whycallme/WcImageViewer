@@ -148,9 +148,8 @@ public sealed class SettingsService
         }
 
         settings.AssociateFileTypes = false;
-        settings.Theme = string.Equals(settings.Theme, "Light", StringComparison.OrdinalIgnoreCase)
-            ? "Light"
-            : "Dark";
+        // 기존 저장값(Light/Dark)은 그대로, 값이 없거나 알 수 없으면 시스템.
+        settings.Theme = ThemeService.ToSetting(ThemeService.ParseMode(settings.Theme));
         settings.Shortcuts ??= new Dictionary<string, string>();
         settings.Bookmarks ??= new List<string>();
         settings.SlideshowIntervalSeconds = Math.Clamp(settings.SlideshowIntervalSeconds, 2, 60);
@@ -177,6 +176,31 @@ public sealed class SettingsService
                 settings.PendingUpdate = null;
             }
         }
+
+        settings.ListViewGlobal ??= new ListViewPrefs();
+        settings.ListViewGlobal.ThumbSize = Math.Clamp(settings.ListViewGlobal.ThumbSize, 64, 320);
+
+        settings.ListViewFolderPrefs ??= new Dictionary<string, ListViewPrefs>();
+        foreach (var key in settings.ListViewFolderPrefs.Keys.ToList())
+        {
+            var value = settings.ListViewFolderPrefs[key];
+            if (value is null)
+            {
+                settings.ListViewFolderPrefs[key] = new ListViewPrefs();
+            }
+            else
+            {
+                value.ThumbSize = Math.Clamp(value.ThumbSize, 64, 320);
+            }
+        }
+
+        settings.ListViewLayout ??= new ListViewLayout();
+        settings.ListViewLayout.LeftColumnWidth = Math.Clamp(settings.ListViewLayout.LeftColumnWidth, 180, 4000);
+        settings.ListViewLayout.LeftTopHeightRatio = Math.Clamp(settings.ListViewLayout.LeftTopHeightRatio, 0.1, 0.9);
+        settings.ListViewLayout.InfoHeight = Math.Clamp(settings.ListViewLayout.InfoHeight, 80, 500);
+
+        settings.UiFontSize = Math.Clamp(settings.UiFontSize, 8, 48);
+        settings.ListViewItemFontSize = Math.Clamp(settings.ListViewItemFontSize, 8, 48);
 
         return settings;
     }

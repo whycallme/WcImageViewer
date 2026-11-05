@@ -78,7 +78,7 @@ public class SettingsServiceTests
             Assert.True(service.Settings.SlideshowRepeat);
             Assert.False(service.Settings.SlideshowRandom);
             Assert.True(service.Settings.DoNotUpscaleSmallImages);
-            Assert.Equal("Dark", service.Settings.Theme);
+            Assert.Equal("System", service.Settings.Theme);
         }
         finally
         {
@@ -139,14 +139,14 @@ public class SettingsServiceTests
             var checkedAt = new DateTime(2026, 10, 24, 3, 4, 5, DateTimeKind.Utc);
             var service = SettingsService.ForPath(path);
             service.Settings.AutoCheckUpdates = false;
-            service.Settings.SkippedVersion = " v0.5.0 ";
+            service.Settings.SkippedVersion = " v99.0.0 ";
             service.Settings.LastUpdateCheckUtc = checkedAt;
             service.Settings.PendingUpdate = new UpdateRelease
             {
-                Tag = "v0.5.0",
-                Name = "Release v0.5.0",
+                Tag = "v99.0.0",
+                Name = "Release v99.0.0",
                 Body = "notes",
-                HtmlUrl = "https://example.test/releases/v0.5.0",
+                HtmlUrl = "https://example.test/releases/v99.0.0",
                 AssetName = UpdateService.PortableAssetName,
                 AssetUrl = "https://example.test/WcImageViewer-portable-win-x64.zip",
                 AssetSize = 2048,
@@ -157,14 +157,14 @@ public class SettingsServiceTests
             var loaded = SettingsService.ForPath(path);
 
             Assert.False(loaded.Settings.AutoCheckUpdates);
-            Assert.Equal("0.5.0", loaded.Settings.SkippedVersion);
+            Assert.Equal("99.0.0", loaded.Settings.SkippedVersion);
             Assert.Equal(checkedAt, loaded.Settings.LastUpdateCheckUtc);
             var pending = loaded.Settings.PendingUpdate;
             Assert.NotNull(pending);
-            Assert.Equal("v0.5.0", pending.Tag);
-            Assert.Equal("Release v0.5.0", pending.Name);
+            Assert.Equal("v99.0.0", pending.Tag);
+            Assert.Equal("Release v99.0.0", pending.Name);
             Assert.Equal("notes", pending.Body);
-            Assert.Equal("https://example.test/releases/v0.5.0", pending.HtmlUrl);
+            Assert.Equal("https://example.test/releases/v99.0.0", pending.HtmlUrl);
             Assert.Equal(UpdateService.PortableAssetName, pending.AssetName);
             Assert.Equal(2048, pending.AssetSize);
             Assert.Equal("sha256:0123456789abcdef", pending.AssetDigest);
@@ -238,25 +238,74 @@ public class SettingsServiceTests
         {
             var path = Path.Combine(folder, "settings.json");
             var service = SettingsService.ForPath(path);
-            service.Settings.SkippedVersion = "0.5.0";
+            service.Settings.SkippedVersion = "99.0.0";
             service.Settings.PendingUpdate = new UpdateRelease
             {
-                Tag = "v0.5.0",
+                Tag = "v99.0.0",
                 AssetUrl = "https://example.test/WcImageViewer-portable-win-x64.zip",
                 AssetDigest = "sha256:0123456789abcdef"
             };
             service.Save();
 
             var skipped = SettingsService.ForPath(path);
-            Assert.Equal("0.5.0", skipped.Settings.SkippedVersion);
-            Assert.Equal("v0.5.0", skipped.Settings.PendingUpdate?.Tag);
+            Assert.Equal("99.0.0", skipped.Settings.SkippedVersion);
+            Assert.Equal("v99.0.0", skipped.Settings.PendingUpdate?.Tag);
 
             skipped.Settings.SkippedVersion = string.Empty;
             skipped.Save();
 
             var reask = SettingsService.ForPath(path);
             Assert.Equal(string.Empty, reask.Settings.SkippedVersion);
-            Assert.Equal("v0.5.0", reask.Settings.PendingUpdate?.Tag);
+            Assert.Equal("v99.0.0", reask.Settings.PendingUpdate?.Tag);
+        }
+        finally
+        {
+            Directory.Delete(folder, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData("{\"Version\":2,\"Theme\":\"Light\"}", "Light")]
+    [InlineData("{\"Version\":2,\"Theme\":\"Dark\"}", "Dark")]
+    [InlineData("{\"Version\":2}", "System")]
+    [InlineData("{\"Version\":2,\"Theme\":null}", "System")]
+    [InlineData("{\"Version\":2,\"Theme\":\"Neon\"}", "System")]
+    public void ThemeSettingKeepsLegacyValuesAndDefaultsToSystem(string json, string expected)
+    {
+        var folder = TestTemp.CreateFolder("wciv_settings");
+        try
+        {
+            var path = Path.Combine(folder, "settings.json");
+            File.WriteAllText(path, json);
+
+            var loaded = SettingsService.ForPath(path);
+
+            Assert.Equal(expected, loaded.Settings.Theme);
+        }
+        finally
+        {
+            Directory.Delete(folder, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void SavesAndLoadsSettingsWindowSize()
+    {
+        var folder = TestTemp.CreateFolder("wciv_settings");
+        try
+        {
+            var path = Path.Combine(folder, "settings.json");
+            var service = SettingsService.ForPath(path);
+            Assert.Null(service.Settings.SettingsWindowWidth);
+            Assert.Null(service.Settings.SettingsWindowHeight);
+
+            service.Settings.SettingsWindowWidth = 880.5;
+            service.Settings.SettingsWindowHeight = 640;
+            service.Save();
+
+            var loaded = SettingsService.ForPath(path);
+            Assert.Equal(880.5, loaded.Settings.SettingsWindowWidth);
+            Assert.Equal(640, loaded.Settings.SettingsWindowHeight);
         }
         finally
         {

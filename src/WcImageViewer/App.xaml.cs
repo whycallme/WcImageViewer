@@ -20,8 +20,9 @@ public partial class App : Application
         _ = Task.Run(UpdateInstaller.CleanupLegacyUpdater);
 
         var settingsService = SettingsService.LoadDefault();
-        ThemeService.Apply(ThemeService.Parse(settingsService.Settings.Theme));
+        ThemeService.ApplyMode(ThemeService.ParseMode(settingsService.Settings.Theme));
         ThemeService.ThemeChanged += OnThemeChanged;
+        ThemeService.StartSystemWatch();
 
         if (settingsService.Settings.SingleWindowMode)
         {
@@ -54,7 +55,6 @@ public partial class App : Application
 
         var window = new MainWindow(settingsService);
         MainWindow = window;
-        window.Show();
 
         if (_singleInstance is not null)
         {
@@ -79,13 +79,19 @@ public partial class App : Application
 
         if (e.Args.Length > 0)
         {
+            window.Show();
             window.OpenPath(e.Args[0]);
+        }
+        else
+        {
+            window.OpenListView();
         }
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
         ThemeService.ThemeChanged -= OnThemeChanged;
+        ThemeService.StopSystemWatch();
         _singleInstance?.Dispose();
         _singleInstance = null;
         base.OnExit(e);

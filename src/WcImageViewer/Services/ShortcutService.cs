@@ -6,16 +6,22 @@ public sealed record ShortcutDefinition(string Id, string Label, string DefaultG
 
 public static class ShortcutService
 {
+    public static IReadOnlyDictionary<string, IReadOnlySet<string>> LegacyDefaults { get; } =
+        new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal)
+        {
+            ["Open"] = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "F3" }
+        };
+
     public static IReadOnlyList<ShortcutDefinition> Definitions { get; } = new[]
     {
-        new ShortcutDefinition("Open", "파일 열기", "F3"),
+        new ShortcutDefinition("Open", "파일 열기", "F3|Ctrl+O"),
         new ShortcutDefinition("CloseImage", "현재 이미지 닫기", "F4"),
         new ShortcutDefinition("Settings", "설정", "F5|Ctrl+Comma"),
         new ShortcutDefinition("Bookmarks", "책갈피 관리", "F6"),
         new ShortcutDefinition("Fullscreen", "전체화면", "F11"),
         new ShortcutDefinition("SaveAs", "다른 이름으로 저장", "F12"),
-        new ShortcutDefinition("Previous", "이전 이미지", "Left|PageUp|Backspace"),
-        new ShortcutDefinition("Next", "다음 이미지", "Right|PageDown|Space"),
+        new ShortcutDefinition("Previous", "이전 이미지", "Left|Up|PageUp|Backspace"),
+        new ShortcutDefinition("Next", "다음 이미지", "Right|Down|PageDown|Space"),
         new ShortcutDefinition("First", "첫 이미지", "Home"),
         new ShortcutDefinition("Last", "마지막 이미지", "End"),
         new ShortcutDefinition("ZoomIn", "확대", "Add|Plus|Shift+Plus"),
@@ -26,6 +32,10 @@ public static class ShortcutService
         new ShortcutDefinition("Slideshow", "슬라이드쇼 시작·중지", "S"),
         new ShortcutDefinition("Thumbnails", "썸네일 스트립 고정 표시·숨김", "T"),
         new ShortcutDefinition("Info", "이미지 정보 오버레이", "Tab"),
+        new ShortcutDefinition("ListView", "리스트뷰 열기", "Enter"),
+        new ShortcutDefinition("ParentFolder", "상위 폴더 이동", "Alt+Up"),
+        new ShortcutDefinition("Back", "뒤로/이전 이미지", "Alt+Left"),
+        new ShortcutDefinition("Forward", "앞으로/다음 이미지", "Alt+Right"),
         new ShortcutDefinition("Rename", "이름 바꾸기", "F2"),
         new ShortcutDefinition("Delete", "파일 삭제", "Delete"),
         new ShortcutDefinition("Copy", "클립보드로 복사", "Ctrl+C"),
@@ -44,7 +54,16 @@ public static class ShortcutService
                 custom.TryGetValue(definition.Id, out var gesture) &&
                 IsValidGestureSet(gesture))
             {
-                result[definition.Id] = Normalize(gesture);
+                var normalized = Normalize(gesture);
+                if (LegacyDefaults.TryGetValue(definition.Id, out var legacy) &&
+                    legacy.Contains(normalized))
+                {
+                    result[definition.Id] = definition.DefaultGesture;
+                }
+                else
+                {
+                    result[definition.Id] = normalized;
+                }
             }
             else
             {
@@ -55,9 +74,116 @@ public static class ShortcutService
         return result;
     }
 
+    public static Dictionary<string, string> ToCustomMap(
+        IReadOnlyDictionary<string, string>? effective)
+    {
+        var result = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (effective is null)
+        {
+            return result;
+        }
+
+        foreach (var pair in effective)
+        {
+            var definition = Definitions.FirstOrDefault(item => item.Id == pair.Key);
+            if (definition is null)
+            {
+                result[pair.Key] = pair.Value;
+                continue;
+            }
+
+            if (string.Equals(
+                    Normalize(pair.Value),
+                    Normalize(definition.DefaultGesture),
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            result[pair.Key] = pair.Value;
+        }
+
+        return result;
+    }
+
+    public enum Screen
+    {
+        Viewer,
+        List
+    }
+
+    // 뷰어/리스트 공통 keymap 에서 해당 화면에 구현이 없는 동작.
+    private static readonly IReadOnlySet<string> ViewerUnavailable =
+        new HashSet<string>(StringComparer.Ordinal) { "ParentFolder" };
+
+    private static readonly IReadOnlySet<string> ListUnavailable =
+        new HashSet<string>(StringComparer.Ordinal) { "CloseImage", "WindowFit", "Thumbnails", "Edit" };
+
+    public static bool IsUnavailableIn(string actionId, Screen screen)
+    {
+        return screen == Screen.Viewer
+            ? ViewerUnavailable.Contains(actionId)
+            : ListUnavailable.Contains(actionId);
+    }
+
+    public static string GetUnavailableMessage(string actionId)
+    {
+        var label = Definitions.FirstOrDefault(item => item.Id == actionId)?.Label ?? actionId;
+        return $"「{label}」 기능은 이 화면에서 사용할 수 없습니다.";
+    }
+
+    /// <summary>현재 키 입력에 해당하는 동작 id 를 찾는다. 없으면 null.</summary>
+    public static string? FindAction(IReadOnlyDictionary<string, string> shortcuts, KeyEventArgs e)
+    {
+        foreach (var shortcut in shortcuts)
+        {
+            if (Matches(shortcut.Value, e))
+            {
+                return shortcut.Key;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// TextBox 등 입력 필드에 포커스가 있을 때 키를 입력(편집)으로 남겨야 하는지.
+    /// F1~F24 와 Alt 조합만 단축키로 통과시킨다.
+    /// </summary>
+    public static bool IsTextEditingKey(KeyEventArgs e)
+    {
+        var key = PressedKey(e);
+        if (key >= Key.F1 && key <= Key.F24)
+        {
+            return false;
+        }
+
+        return (Keyboard.Modifiers & ModifierKeys.Alt) != ModifierKeys.Alt;
+    }
+
+    /// <summary>
+    /// 목록(ListBox)이 포커스일 때 목록이 자체적으로 처리해야 하는 무수식 탐색 키인지.
+    /// </summary>
+    public static bool IsListNavigationKey(KeyEventArgs e)
+    {
+        var modifiers = Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Alt | ModifierKeys.Windows);
+        if (modifiers != ModifierKeys.None)
+        {
+            return false;
+        }
+
+        return PressedKey(e) is Key.Up or Key.Down or Key.Left or Key.Right
+            or Key.Home or Key.End or Key.PageUp or Key.PageDown or Key.Space or Key.Enter;
+    }
+
+    private static Key PressedKey(KeyEventArgs e)
+    {
+        return e.Key == Key.System ? e.SystemKey : e.Key;
+    }
+
     public static bool Matches(string gestureSet, KeyEventArgs e)
     {
-        var pressedKey = e.Key == Key.System ? e.SystemKey : e.Key;
+        var pressedKey = PressedKey(e);
         var pressedModifiers = Keyboard.Modifiers &
                                (ModifierKeys.Control | ModifierKeys.Alt | ModifierKeys.Shift | ModifierKeys.Windows);
 
