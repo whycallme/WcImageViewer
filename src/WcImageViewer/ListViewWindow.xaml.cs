@@ -22,6 +22,7 @@ public partial class ListViewWindow : Window
 {
     private readonly AppSettings _settings;
     private readonly Action _saveSettings;
+    private readonly SettingsService? _settingsService;
     private readonly Dictionary<string, string> _shortcuts;
     private readonly string _startFolder;
     private string? _startFile;
@@ -54,7 +55,7 @@ public partial class ListViewWindow : Window
 
     public string? OpenInViewerPath { get; private set; }
 
-    public ListViewWindow(AppSettings settings, Action saveSettings, string startFolder, string? startFile)
+    public ListViewWindow(AppSettings settings, Action saveSettings, string startFolder, string? startFile, SettingsService? settingsService = null)
     {
         InitializeComponent();
         sizeSlider.ValueChanged += SizeSlider_ValueChanged;
@@ -65,6 +66,7 @@ public partial class ListViewWindow : Window
 
         _settings = settings;
         _saveSettings = saveSettings;
+        _settingsService = settingsService;
         _shortcuts = ShortcutService.GetEffective(_settings.Shortcuts);
         _startFolder = startFolder;
         _startFile = startFile;
@@ -185,6 +187,9 @@ public partial class ListViewWindow : Window
             _previewCts?.Dispose();
             _folderCts?.Cancel();
             _folderCts?.Dispose();
+
+            try { if (_settingsService != null) { _settingsService.Save(); } else { _saveSettings(); } } catch { }
+            try { _ = UpdateService.Instance.CheckAsync(AppVersion.Current, manual: false); } catch { }
         };
 
         RestoreLayout();

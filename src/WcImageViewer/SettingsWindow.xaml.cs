@@ -457,6 +457,35 @@ public partial class SettingsWindow : Window
         RefreshUpdateSection();
     }
 
+    private async void OnCheckAndUpdateClick(object sender, RoutedEventArgs e)
+    {
+        if (_closed)
+        {
+            return;
+        }
+
+        await UpdateService.Instance.CheckAsync(AppVersion.Current, manual: true);
+        if (_closed)
+        {
+            return;
+        }
+
+        RefreshUpdateSection();
+
+        var release = UpdateService.Instance.AvailableRelease;
+        if (release is not null)
+        {
+            var dialog = new UpdateWindow(release) { Owner = this };
+            dialog.ShowDialog();
+            if (_closed)
+            {
+                return;
+            }
+
+            RefreshUpdateSection();
+        }
+    }
+
     private void OnClearSkippedClick(object sender, RoutedEventArgs e)
     {
         _skippedVersion = string.Empty;
@@ -496,6 +525,10 @@ public partial class SettingsWindow : Window
             : $"v{UpdateService.FormatVersion(releaseVersion)}";
 
         CheckNowButton.IsEnabled = !service.IsChecking;
+        if (CheckAndUpdateButton is not null)
+        {
+            CheckAndUpdateButton.IsEnabled = !service.IsChecking;
+        }
         SkippedVersionText.Text = $"건너뛴 버전 v{_skippedVersion}";
         SkippedVersionRow.Visibility = _skippedVersion.Length > 0
             ? Visibility.Visible

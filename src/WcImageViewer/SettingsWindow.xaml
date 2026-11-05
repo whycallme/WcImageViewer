@@ -276,14 +276,21 @@
                     <Grid Margin="0,8,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
                         <Button x:Name="CheckNowButton"
                                 Content="지금 확인"
                                 Click="OnCheckNowClick"
                                 VerticalAlignment="Top" />
+                        <Button x:Name="CheckAndUpdateButton"
+                                Grid.Column="1"
+                                Content="업데이트 확인 및 적용"
+                                Margin="8,0,0,0"
+                                Click="OnCheckAndUpdateClick"
+                                VerticalAlignment="Top" />
                         <TextBlock x:Name="UpdateStatusText"
-                                   Grid.Column="1"
+                                   Grid.Column="2"
                                    Margin="10,6,0,0"
                                    Foreground="{DynamicResource SecondaryTextBrush}"
                                    TextWrapping="Wrap"
