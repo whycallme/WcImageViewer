@@ -1175,6 +1175,7 @@ public partial class ListViewWindow : Window
         if (thumbList.SelectedPaths.Count > 0)
         {
             var selectedPath = thumbList.SelectedPaths[thumbList.SelectedPaths.Count - 1];
+            OpenInViewerPath = selectedPath;
             await main.OpenPathAndStartSlideshowAsync(selectedPath);
             ShowNotice("슬라이드쇼 시작");
             main.Show();
