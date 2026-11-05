@@ -2582,13 +2582,17 @@ public partial class MainWindow : Window
             var dialog = new UpdateWindow(release) { Owner = this };
             var result = dialog.ShowDialog();
 
-            _settings.PendingUpdate = release;
             _settings.LastUpdateCheckUtc = UpdateService.Instance.LastCheckUtc;
 
             if (result == true)
             {
+                _settings.PendingUpdate = release;
                 return true;
             }
+
+            // 사용자가 업데이트를 취소(닫기/나중에)하면 pending을 clear해
+            // 재시작 시 업데이트 알림이 무한히 반복되는 것을 막는다.
+            _settings.PendingUpdate = null;
 
             if (dialog.SkipVersion)
             {
@@ -2603,6 +2607,9 @@ public partial class MainWindow : Window
         }
         catch (Exception ex) when (ex is InvalidOperationException or Win32Exception)
         {
+            // 프롬프트 표시 실패 시에도 pending을 clear해 무한루프를 막는다.
+            _settings.PendingUpdate = null;
+            SaveUpdateState();
             MessageBox.Show(
                 this,
                 $"업데이트 창을 열 수 없습니다.\n{ex.Message}",

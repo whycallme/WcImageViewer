@@ -111,7 +111,7 @@ public sealed class UpdateService
                 LastCheckUtc = DateTime.UtcNow;
                 LastError = null;
 
-                if (version > current)
+                if (CompareReleaseVersion(version, current) > 0)
                 {
                     AvailableRelease = release;
                     return new UpdateCheckResult(
@@ -311,6 +311,25 @@ public sealed class UpdateService
         }
 
         return Version.TryParse(trimmed, out var version) ? version : null;
+    }
+
+    // Major/Minor/Build만 비교하고 Revision은 무시한다. 어셈블리 버전(1.1.2.0)과
+    // 릴리즈 태그(v1.1.2)가 같은 버전으로 취급되도록 한다.
+    public static int CompareReleaseVersion(Version release, Version current)
+    {
+        ArgumentNullException.ThrowIfNull(release);
+        ArgumentNullException.ThrowIfNull(current);
+
+        var releaseBuild = release.Build >= 0 ? release.Build : 0;
+        var currentBuild = current.Build >= 0 ? current.Build : 0;
+
+        var major = release.Major.CompareTo(current.Major);
+        if (major != 0) return major;
+
+        var minor = release.Minor.CompareTo(current.Minor);
+        if (minor != 0) return minor;
+
+        return releaseBuild.CompareTo(currentBuild);
     }
 
     public static string FormatVersion(Version version)
