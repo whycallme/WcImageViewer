@@ -95,7 +95,18 @@ public partial class UpdateWindow : Window
             }
 
             StatusText.Text = "업데이트 프로그램을 시작하는 중...";
-            UpdateInstaller.Launch(_package);
+            try
+            {
+                UpdateInstaller.Launch(_package);
+            }
+            catch (Exception ex)
+            {
+                // The dialog closes as soon as Launch succeeds, so a failure here
+                // would leave the user with no app and no explanation.
+                ShowErrorState(ex);
+                return;
+            }
+
             _completed = true;
             DialogResult = true;
         }

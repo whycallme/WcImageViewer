@@ -170,13 +170,23 @@ public static class UpdateInstaller
             startInfo.ArgumentList.Add(argument);
         }
 
-        var process = Process.Start(startInfo)
-            ?? throw new InvalidOperationException("업데이트 프로그램을 시작할 수 없습니다.");
+        Process process;
+        try
+        {
+            process = Process.Start(startInfo)
+                ?? throw new InvalidOperationException("업데이트 프로그램을 시작할 수 없습니다.");
+        }
+        catch (Exception ex) when (ex is not InvalidOperationException)
+        {
+            throw new InvalidOperationException(
+                $"업데이트 프로그램({updater})을 시작할 수 없습니다: {ex.Message}", ex);
+        }
 
         if (process.WaitForExit(1000))
         {
             throw new InvalidOperationException(
-                $"업데이트 프로그램이 즉시 종료되었습니다 (종료 코드 {process.ExitCode}).");
+                $"업데이트 프로그램이 즉시 종료되었습니다 (종료 코드 {process.ExitCode}). " +
+                $"자세한 내용은 업데이트 로그({package.LogPath})를 확인해 주세요.");
         }
 
         return process;
