@@ -104,7 +104,7 @@ public sealed class UpdateService
                 }
 
                 var json = await response.Content.ReadAsStringAsync(timeout.Token).ConfigureAwait(false);
-                var release = ParseRelease(json, AppVersion.IsLite);
+                var release = ParseRelease(json);
                 var version = ParseTagVersion(release.Tag)
                     ?? throw new InvalidOperationException("릴리즈 버전을 해석할 수 없습니다.");
 
@@ -238,7 +238,7 @@ public sealed class UpdateService
         }
     }
 
-    public static UpdateRelease ParseRelease(string json, bool isLite)
+    public static UpdateRelease ParseRelease(string json)
     {
         using var document = JsonDocument.Parse(json);
         var root = document.RootElement;
@@ -249,7 +249,7 @@ public sealed class UpdateService
             throw new InvalidOperationException("릴리즈 태그가 없습니다.");
         }
 
-        var expectedAsset = isLite ? LiteAssetName : PortableAssetName;
+        var expectedAsset = LiteAssetName;
         if (!root.TryGetProperty("assets", out var assets) || assets.ValueKind != JsonValueKind.Array)
         {
             throw new InvalidOperationException("릴리즈 자산 목록이 없습니다.");

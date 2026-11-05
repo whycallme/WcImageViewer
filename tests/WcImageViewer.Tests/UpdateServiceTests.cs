@@ -12,14 +12,12 @@ public class UpdateServiceTests
 {
     private const string Digest = "sha256:0123456789abcdef";
 
-    [Theory]
-    [InlineData(UpdateService.PortableAssetName, false)]
-    [InlineData(UpdateService.LiteAssetName, true)]
-    public void ParseReleaseSelectsAssetForFlavor(string assetName, bool isLite)
+    [Fact]
+    public void ParseReleaseSelectsLiteAsset()
     {
-        var release = UpdateService.ParseRelease(CreateFeed("v0.4.1", assetName), isLite);
+        var release = UpdateService.ParseRelease(CreateFeed("v0.4.1", UpdateService.LiteAssetName));
 
-        Assert.Equal(assetName, release.AssetName);
+        Assert.Equal(UpdateService.LiteAssetName, release.AssetName);
         Assert.Equal("v0.4.1", release.Tag);
         Assert.Equal("Release v0.4.1", release.Name);
         Assert.Equal("notes", release.Body);
@@ -29,12 +27,12 @@ public class UpdateServiceTests
     }
 
     [Fact]
-    public void ParseReleaseFailsWhenFlavorAssetIsMissing()
+    public void ParseReleaseFailsWhenLiteAssetIsMissing()
     {
-        var json = CreateFeed("v0.4.1", UpdateService.LiteAssetName);
+        var json = CreateFeed("v0.4.1", UpdateService.PortableAssetName);
 
         Assert.Throws<InvalidOperationException>(
-            () => UpdateService.ParseRelease(json, isLite: false));
+            () => UpdateService.ParseRelease(json));
     }
 
     [Theory]
@@ -47,14 +45,14 @@ public class UpdateServiceTests
         var json = CreateFeed("v0.4.1", digest: digest, size: size);
 
         Assert.Throws<InvalidOperationException>(
-            () => UpdateService.ParseRelease(json, isLite: false));
+            () => UpdateService.ParseRelease(json));
     }
 
     [Fact]
     public void ParseReleaseRejectsBrokenJson()
     {
         Assert.ThrowsAny<JsonException>(
-            () => UpdateService.ParseRelease("{ broken", isLite: false));
+            () => UpdateService.ParseRelease("{ broken"));
     }
 
     [Fact]
@@ -324,7 +322,7 @@ public class UpdateServiceTests
 
     private static string CreateFeed(
         string tag,
-        string assetName = UpdateService.PortableAssetName,
+        string assetName = UpdateService.LiteAssetName,
         string? digest = Digest,
         long size = 1024)
     {
