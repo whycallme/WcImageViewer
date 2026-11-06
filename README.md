@@ -2,7 +2,7 @@
 
 Windows용 가볍고 빠른 이미지 뷰어입니다. 폴더와 압축파일(ZIP/CBZ, 7Z/CB7, RAR/CBR)을 열면 첫 이미지가 바로 표시되며, 설치 없이 실행할 수 있습니다.
 
-v0.4.2에서는 updater를 앱 exe에 내장해 배포 폴더에 `WcImageViewer.exe` 하나만 남고, 릴리즈 ZIP도 exe와 문서 2개, 3개 파일로 줄었습니다.
+최신 버전은 **v1.2.0**입니다. 새 폴더 만들기와 우클릭 컨텍스트 메뉴(단축키 표시)가 추가되었고, 리스트뷰 메뉴가 정리되었습니다. updater는 앱 exe에 내장되어 배포 폴더에는 `WcImageViewer.exe` 하나만 남습니다. 변경 내역은 [릴리즈 페이지](https://github.com/whycallme/WcImageViewer/releases)와 [docs/changelog.md](docs/changelog.md)에서 볼 수 있습니다.
 
 ## 다운로드
 
@@ -10,14 +10,14 @@ v0.4.2에서는 updater를 앱 exe에 내장해 배포 폴더에 `WcImageViewer.
 
 | 파일 | 크기 | 요구사항 |
 |---|---|---|
-| `WcImageViewer-portable-win-x64.zip` | 62,189,153 B (약 62MB) | 없음 (self-contained) |
-| `WcImageViewer-lite-win-x64.zip` | 3,091,805 B (약 3MB) | .NET 10 Desktop Runtime |
+| `WcImageViewer-portable-win-x64.zip` | 62,232,701 B (약 62MB) | 없음 (self-contained) |
+| `WcImageViewer-lite-win-x64.zip` | 3,136,646 B (약 3MB) | .NET 10 Desktop Runtime |
 
 압축을 풀고 `WcImageViewer.exe`를 실행하세요. 이미지 파일, 폴더, 압축파일을 인자로 넘기거나 창에 끌어다 놓아도 됩니다.
 
 ZIP에는 파일 3개가 들어 있습니다: `WcImageViewer.exe`(updater 내장), `LICENSE`, `THIRD-PARTY-NOTICES.md`. 별도의 updater 파일은 없으며, 업데이트는 앱에 내장된 updater가 임시 폴더에 풀려 실행됩니다. 배포 폴더에도 updater가 남지 않습니다.
 
-> **v0.4.1 이상에서 올라오면 자동으로 업데이트됩니다.** v0.4.0 이하는 v0.4.2를 한 번 수동으로 설치해야 합니다. v0.4.0 이하의 업데이트 코드는 ZIP 안의 `WcImageViewer.Updater.exe`를 요구하는데 v0.4.2 ZIP에는 없기 때문입니다. updater가 들어간 마지막 ZIP은 v0.4.1입니다. v0.3.0 이하는 자동 업데이트 코드가 없어 어느 버전이든 한 번은 수동 설치가 필요합니다.
+> **v0.4.1 이상에서 올라오면 자동으로 업데이트됩니다.** v0.4.0 이하는 자동 업데이트 구조가 달라 v0.4.2 이상을 한 번 수동으로 설치해야 하며, v0.3.0 이하는 어느 버전이든 한 번은 수동 설치가 필요합니다.
 
 ```powershell
 WcImageViewer.exe "C:\images"
@@ -107,7 +107,10 @@ dotnet run --project src/WcImageViewer
 src/WcImageViewer/     WPF 앱 (Models, Services, Controls, 창)
 tests/                 xUnit 테스트
 scripts/publish.ps1    portable/lite 게시 및 zip 생성
+scripts/release.ps1    릴리즈 등록 도우미 (제목은 버전만)
 docs/PLAN.md           개발 계획과 진행 상태
+docs/changelog.md      버전별 변경 내역
+docs/build-rules.md    빌드·릴리즈 규칙
 ```
 
 배포:
@@ -119,7 +122,7 @@ powershell -ExecutionPolicy Bypass -File scripts/publish.ps1
 - `build/portable/WcImageViewer.exe`: self-contained 단일 exe (updater 내장)
 - `build/lite/WcImageViewer.exe`: .NET 10 Desktop Runtime 필요 (updater 내장)
 - updater는 `src/WcImageViewer.Updater/obj/publish`에 .NET Framework 4.8 csc로 컴파일해 앱에 임베드합니다. 배포 폴더에는 파일이 남지 않습니다.
-- `build/*.zip`: 릴리즈용 압축 파일 (exe, LICENSE, THIRD-PARTY-NOTICES.md 3개).
+- `build/*.zip`: 릴리즈용 압축 파일 (exe, LICENSE, THIRD-PARTY-NOTICES.md 3개). `build/`와 `*.zip`은 git에 포함되지 않고 릴리즈 자산으로만 배포합니다.
 
 ## 라이선스
 

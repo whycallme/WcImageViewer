@@ -8,3 +8,7 @@ __pycache__/
 .vscode/
 .idea/
 
+# 빌드 산출물 (build/ 에만 생성, zip 은 릴리즈 자산)
+build/
+*.zip
+
