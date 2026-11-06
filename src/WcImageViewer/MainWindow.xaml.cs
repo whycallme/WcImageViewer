@@ -1371,6 +1371,9 @@ public partial class MainWindow : Window
             case "Rename":
                 _ = RenameCurrentAsync();
                 break;
+            case "NewFolder":
+                _ = OnNewFolderAsync();
+                break;
             case "Delete":
                 _ = DeleteCurrentAsync();
                 break;
@@ -1906,6 +1909,58 @@ public partial class MainWindow : Window
         }
     }
 
+    private async Task OnNewFolderAsync()
+    {
+        if (_source is not FolderImageSource || _index < 0 || _index >= _source.Count)
+        {
+            ShowStatus("폴더에 있는 이미지일 때만 새 폴더를 만들 수 있습니다.");
+            return;
+        }
+
+        var entry = _source.GetEntry(_index);
+        var directory = Path.GetDirectoryName(entry.Key);
+        if (directory is null)
+        {
+            ShowStatus("폴더를 알 수 없습니다.");
+            return;
+        }
+
+        var dialog = new NewFolderWindow("새 폴더") { Owner = this };
+        if (dialog.ShowDialog() != true)
+        {
+            return;
+        }
+
+        var newPath = Path.Combine(directory, dialog.NewName);
+        if (Directory.Exists(newPath))
+        {
+            MessageBox.Show(
+                this,
+                "같은 이름의 폴더가 이미 있습니다.",
+                "새 폴더",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        try
+        {
+            Directory.CreateDirectory(newPath);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+        {
+            MessageBox.Show(
+                this,
+                $"폴더를 만들 수 없습니다.\n{ex.Message}",
+                "새 폴더",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            return;
+        }
+
+        await ReloadFolderAsync(directory, _index, null);
+    }
+
     private async Task DeleteCurrentAsync()
     {
         if (_source is not FolderImageSource || _index < 0 || _index >= _source.Count)
@@ -2392,6 +2447,64 @@ public partial class MainWindow : Window
     {
         Viewer.FitToWindow();
         _settings.DefaultZoomPercent = 0;
+    }
+
+    private void OnNewFolderClick(object sender, RoutedEventArgs e) => _ = OnNewFolderAsync();
+
+    private void OnPreviewMouseRightButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (!Viewer.HasImage)
+        {
+            return;
+        }
+
+        var menu = new ContextMenu();
+
+        void AddItem(string header, string actionId)
+        {
+            var item = new MenuItem { Header = header };
+            item.Click += (_, _) => ExecuteShortcut(actionId);
+            if (_shortcuts.TryGetValue(actionId, out var gesture) &&
+                !string.IsNullOrWhiteSpace(gesture))
+            {
+                item.InputGestureText = ShortcutService.ToDisplay(gesture);
+                item.FontSize = 12;
+            }
+            menu.Items.Add(item);
+        }
+
+        AddItem("복사", "Copy");
+        menu.Items.Add(new Separator());
+        AddItem("이전", "Previous");
+        AddItem("다음", "Next");
+        AddItem("첫 이미지", "First");
+        AddItem("마지막 이미지", "Last");
+        menu.Items.Add(new Separator());
+        AddItem("확대", "ZoomIn");
+        AddItem("축소", "ZoomOut");
+        AddItem("창에 맞춤", "Fit");
+        AddItem("100% 크기", "ActualSize");
+        AddItem("이미지 크기에 창 맞춤", "WindowFit");
+        menu.Items.Add(new Separator());
+        AddItem("슬라이드쇼", "Slideshow");
+        AddItem("전체화면", "Fullscreen");
+        menu.Items.Add(new Separator());
+        AddItem("이미지 정보", "Info");
+        AddItem("리스트뷰 열기", "ListView");
+        menu.Items.Add(new Separator());
+        AddItem("이름 바꾸기", "Rename");
+        AddItem("새 폴더", "NewFolder");
+        AddItem("삭제", "Delete");
+        menu.Items.Add(new Separator());
+        AddItem("편집 앱으로 열기", "Edit");
+        AddItem("다른 이름으로 저장", "SaveAs");
+        menu.Items.Add(new Separator());
+        AddItem("설정", "Settings");
+        AddItem("창 닫기", "CloseWindow");
+
+        menu.PlacementTarget = Viewer;
+        menu.IsOpen = true;
+        e.Handled = true;
     }
 
     private void OnActualSizeClick(object sender, RoutedEventArgs e)

@@ -176,6 +176,12 @@
                                      Visibility="Collapsed" />
                         </Grid>
                     </Button>
+                    <Button x:Name="NewFolderButton"
+                            Style="{StaticResource IconButtonStyle}"
+                            Content="&#xE8F4;"
+                            Click="OnNewFolderClick"
+                            ToolTip="새 폴더 만들기"
+                            AutomationProperties.Name="새 폴더 만들기" />
                 </StackPanel>
 
                 <StackPanel Grid.Column="3"
@@ -203,7 +209,8 @@
         </Border>
 
         <Grid Grid.Row="1" Background="{DynamicResource ImageAreaBrush}">
-            <controls:ZoomPanControl x:Name="Viewer" />
+            <controls:ZoomPanControl x:Name="Viewer"
+                            PreviewMouseRightButtonUp="OnPreviewMouseRightButtonUp" />
             <TextBlock x:Name="EmptyText"
                        Text="이미지를 열어주세요&#10;파일을 끌어다 놓아도 됩니다"
                        Foreground="{DynamicResource TertiaryTextBrush}"

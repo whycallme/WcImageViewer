@@ -40,7 +40,8 @@ public static class ShortcutService
         new ShortcutDefinition("Delete", "파일 삭제", "Delete"),
         new ShortcutDefinition("Copy", "클립보드로 복사", "Ctrl+C"),
         new ShortcutDefinition("Edit", "편집 앱으로 열기", "Ctrl+E"),
-        new ShortcutDefinition("CloseWindow", "창 닫기", "Escape")
+        new ShortcutDefinition("CloseWindow", "창 닫기", "Escape"),
+        new ShortcutDefinition("NewFolder", "새 폴더", "Ctrl+Shift+N")
     };
 
     public static Dictionary<string, string> GetEffective(

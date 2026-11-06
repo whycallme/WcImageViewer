@@ -5,7 +5,7 @@ param(
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
 $project = Join-Path $root "src/WcImageViewer/WcImageViewer.csproj"
-$publish = Join-Path $root "publish"
+$publish = Join-Path $root "build"
 
 # The updater is a separate .NET Framework 4.8 WinExe so it can replace the
 # running app after it exits. It is compiled by the OS csc.exe, not dotnet build,
@@ -20,7 +20,7 @@ if (-not (Test-Path -LiteralPath $csc)) {
 }
 
 $updaterSource = Join-Path $root "src/WcImageViewer.Updater/Program.cs"
-$updaterDirectory = Join-Path $root "src/WcImageViewer.Updater/obj/publish"
+$updaterDirectory = Join-Path $root "build/updater-obj"
 New-Item -ItemType Directory -Force -Path $updaterDirectory | Out-Null
 $updaterExe = Join-Path $updaterDirectory "WcImageViewer.Updater.exe"
 
@@ -86,7 +86,7 @@ function Assert-EmbeddedUpdater([string]$path) {
     }
 }
 
-$intermediateAssembly = Join-Path $root "src/WcImageViewer/obj/$Configuration/net10.0-windows/win-x64/WcImageViewer.dll"
+$intermediateAssembly = Join-Path $root "build/obj/$Configuration/net10.0-windows/win-x64/WcImageViewer.dll"
 $expectedFileVersion = [regex]::Match(
     [System.IO.File]::ReadAllText($project),
     '<FileVersion>([^<]+)</FileVersion>').Groups[1].Value

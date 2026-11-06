@@ -41,6 +41,8 @@ WcImageViewer.exe "C:\images\photos.zip"
 - Ctrl+E 편집 앱으로 열기, Ctrl+C 이미지 복사, F12 다른 이름으로 저장
 - F6 책갈피 관리, 최근 항목 메뉴
 - 이미지 영역 드래그로 창 이동
+- 새 폴더 만들기 (툴바 버튼, 우클릭 메뉴, 기본 단축키 Ctrl+Shift+N)
+- 우클릭 컨텍스트 메뉴 추가, 메뉴 항목 오른쪽에 단축키 표시 (다크 테마 MenuItem 템플릿)
 - 설정에서 편집 앱 선택, 확장자별 기본 앱 연결, 단축키 변경
 - 여러 창으로 열기 / 하나의 창으로 열기 선택 (다음 실행부터 적용)
 - EXIF orientation, 라이트/다크 테마, High-DPI 대응
@@ -76,6 +78,7 @@ WcImageViewer.exe "C:\images\photos.zip"
 | Ctrl+E | 설정한 편집 앱으로 열기 |
 | Ctrl+C | 현재 이미지를 클립보드로 복사 |
 | Ctrl+, | 설정 (F5와 동일) |
+| Ctrl+Shift+N | 새 폴더 만들기 |
 | Esc | 창 닫기 |
 
 모든 키보드 단축키는 설정의 **단축키**에서 변경할 수 있습니다.
@@ -113,10 +116,10 @@ docs/PLAN.md           개발 계획과 진행 상태
 powershell -ExecutionPolicy Bypass -File scripts/publish.ps1
 ```
 
-- `publish/portable/WcImageViewer.exe`: self-contained 단일 exe (updater 내장)
-- `publish/lite/WcImageViewer.exe`: .NET 10 Desktop Runtime 필요 (updater 내장)
+- `build/portable/WcImageViewer.exe`: self-contained 단일 exe (updater 내장)
+- `build/lite/WcImageViewer.exe`: .NET 10 Desktop Runtime 필요 (updater 내장)
 - updater는 `src/WcImageViewer.Updater/obj/publish`에 .NET Framework 4.8 csc로 컴파일해 앱에 임베드합니다. 배포 폴더에는 파일이 남지 않습니다.
-- `publish/*.zip`: 릴리즈용 압축 파일 (exe, LICENSE, THIRD-PARTY-NOTICES.md 3개).
+- `build/*.zip`: 릴리즈용 압축 파일 (exe, LICENSE, THIRD-PARTY-NOTICES.md 3개).
 
 ## 라이선스
 

@@ -8,7 +8,7 @@ WC Image Viewer는 .NET 10 기반 WPF 앱으로, 두 가지 배포 버전(lite, 
 | 항목 | lite | portable |
 |------|------|----------|
 | PublishProfile | lite | portable |
-| 출력 폴더 | `publish/lite/` | `publish/portable/` |
+| 출력 폴더 | `build/lite/` | `build/portable/` |
 | 실행 파일 | `WcImageViewer.exe` | `WcImageViewer.exe` |
 | ZIP 자산 | `WcImageViewer-lite-win-x64.zip` | `WcImageViewer-portable-win-x64.zip` |
 
@@ -37,7 +37,7 @@ dotnet publish src/WcImageViewer/WcImageViewer.csproj -c Release -p:PublishProfi
 
 ## 5. 릴리즈 등록 규칙
 
-1. `publish.ps1`로 lite, portable zip 모두 생성 (`publish/` 폴더에 생성)
+1. `publish.ps1`로 lite, portable zip 모두 생성 (`build/` 폴더에 생성)
 2. GitHub 릴리즈 태그 생성:
    `gh release create v<버전> --title v<버전> --notes-file docs/releases/v<버전>.md <zip1> <zip2>`
 3. 자산 추가/교체:
@@ -53,4 +53,8 @@ dotnet publish src/WcImageViewer/WcImageViewer.csproj -c Release -p:PublishProfi
 
 ## 7. 참고
 - `publish.ps1`은 .NET Framework 4.8의 csc.exe를 사용하여 업데이터를 컴파일합니다.
-- 게시 출력물은 `publish/lite/`, `publish/portable/` 폴더에 생성되며, zip은 `publish/` 루트에 생성됩니다.
+- 게시 출력물은 `build/lite/`, `build/portable/` 폴더에 생성되며, zip은 `build/` 루트에 생성됩니다.
+
+## 8. 빌드 위치 규칙
+
+다른 위치에 빌드 금지: 빌드는 `build/` 에서만 수행하며, `bin`/`obj`/`publish` 는 다른 위치에 생성하지 않습니다.

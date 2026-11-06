@@ -231,6 +231,7 @@ public partial class SettingsWindow : Window
         FilePanel.Visibility = index == 2 ? Visibility.Visible : Visibility.Collapsed;
         ShortcutPanel.Visibility = index == 3 ? Visibility.Visible : Visibility.Collapsed;
         AssociationPanel.Visibility = index == 4 ? Visibility.Visible : Visibility.Collapsed;
+        UpdatePanel.Visibility = index == 5 ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void BuildExtensionChoices(IReadOnlyCollection<string> selectedExtensions)

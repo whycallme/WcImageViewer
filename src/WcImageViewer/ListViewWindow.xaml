@@ -43,6 +43,7 @@
             <Button x:Name="deleteButton" Style="{StaticResource IconButtonStyle}" Content="&#xE74D;" Click="DeleteButton_Click" ToolTip="삭제" Margin="0,0,4,0" AutomationProperties.Name="삭제" />
             <Button x:Name="copyButton" Style="{StaticResource IconButtonStyle}" Content="&#xE8C8;" Click="CopyButton_Click" ToolTip="복사…" Margin="0,0,4,0" AutomationProperties.Name="복사" />
             <Button x:Name="moveButton" Style="{StaticResource IconButtonStyle}" Content="&#xE8DE;" Click="MoveButton_Click" ToolTip="이동…" Margin="0,0,8,0" AutomationProperties.Name="이동" />
+            <Button x:Name="newFolderButton" Style="{StaticResource IconButtonStyle}" Content="&#xE8F4;" Click="NewFolderButton_Click" ToolTip="새 폴더 만들기" Margin="0,0,4,0" AutomationProperties.Name="새 폴더 만들기" />
             <Button x:Name="SlideshowButton" Style="{StaticResource IconButtonStyle}" Content="&#xE768;" Click="SlideshowButton_Click" ToolTip="슬라이드쇼" Margin="0,0,4,0" AutomationProperties.Name="슬라이드쇼" />
             <Button x:Name="SettingsButton" Style="{StaticResource IconButtonStyle}" Content="&#xE713;" Click="SettingsButton_Click" ToolTip="설정" Margin="0,0,8,0" AutomationProperties.Name="설정" />
             <Border Width="1" Background="{DynamicResource BorderBrush}" Margin="4,2,8,2" />

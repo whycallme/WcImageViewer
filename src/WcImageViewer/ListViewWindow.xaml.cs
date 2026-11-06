@@ -145,6 +145,7 @@ public partial class ListViewWindow : Window
             Close();
         };
         thumbList.EmptyAreaDoubleClicked += (_, _) => UpButton_Click(this, new RoutedEventArgs());
+        thumbList.PreviewMouseRightButtonDown += OnMouseRightButtonDown;
         thumbList.CtrlWheelZoom += delta =>
         {
             if (!IsInitialized || _applyingUI || sizeSlider is null)
@@ -1607,6 +1608,89 @@ public partial class ListViewWindow : Window
         }
     }
 
+    private void NewFolderButton_Click(object sender, RoutedEventArgs e) => ExecuteListViewShortcut("NewFolder");
+
+    private void OnMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.OriginalSource is DependencyObject dep)
+        {
+            var container = FindListBoxItem(dep);
+            if (container?.DataContext is ThumbItem thumb &&
+                !thumbList.SelectedPaths.Contains(thumb.Path))
+            {
+                thumbList.SelectPath(thumb.Path);
+            }
+        }
+
+        var menu = new ContextMenu();
+
+        void AddItem(string header, string actionId)
+        {
+            if (ShortcutService.IsUnavailableIn(actionId, ShortcutService.Screen.List))
+            {
+                return;
+            }
+            var item = new MenuItem { Header = header };
+            item.Click += (_, _) => ExecuteListViewShortcut(actionId);
+            if (_shortcuts.TryGetValue(actionId, out var gesture) &&
+                !string.IsNullOrWhiteSpace(gesture))
+            {
+                item.InputGestureText = ShortcutService.ToDisplay(gesture);
+                item.FontSize = 12;
+            }
+            menu.Items.Add(item);
+        }
+
+        AddItem("열기", "Open");
+        menu.Items.Add(new Separator());
+        AddItem("이전", "Previous");
+        AddItem("다음", "Next");
+        AddItem("첫 이미지", "First");
+        AddItem("마지막 이미지", "Last");
+        menu.Items.Add(new Separator());
+        AddItem("썸네일 확대", "ZoomIn");
+        AddItem("썸네일 축소", "ZoomOut");
+        menu.Items.Add(new Separator());
+        AddItem("슬라이드쇼", "Slideshow");
+        AddItem("전체화면", "Fullscreen");
+        menu.Items.Add(new Separator());
+        AddItem("이름 바꾸기", "Rename");
+        AddItem("삭제", "Delete");
+        AddItem("새 폴더", "NewFolder");
+        menu.Items.Add(new Separator());
+        AddItem("설정", "Settings");
+        AddItem("창 닫기", "CloseWindow");
+
+        menu.PlacementTarget = thumbList;
+        menu.IsOpen = true;
+        e.Handled = true;
+    }
+
+    private static ListBoxItem? FindListBoxItem(DependencyObject current)
+    {
+        while (current is not null)
+        {
+            if (current is ListBoxItem item) return item;
+            current = VisualTreeHelper.GetParent(current);
+        }
+        return null;
+    }
+
+    private void OpenSelected_Click(object sender, RoutedEventArgs e)
+    {
+        var path = thumbList.SelectedPaths.FirstOrDefault();
+        if (!string.IsNullOrEmpty(path))
+        {
+            OpenInViewerPath = path;
+            Close();
+        }
+    }
+
+    private void Rename_Click(object sender, RoutedEventArgs e)
+    {
+        RenameSelected();
+    }
+
     /// <summary>닫기 버튼 없는 자동 소멸 토스트 (MainWindow 의 NoticeBorder 와 동일 방식).</summary>
     private void ShowNotice(string message)
     {
@@ -1622,19 +1706,46 @@ public partial class ListViewWindow : Window
     {
         switch (id)
         {
+            case "NewFolder":
+                {
+                    if (string.IsNullOrEmpty(_currentFolder))
+                    {
+                        ShowNotice("폴더를 알 수 없습니다.");
+                        break;
+                    }
+                    var dialog = new NewFolderWindow("새 폴더") { Owner = this };
+                    if (dialog.ShowDialog() != true) break;
+                    var newPath = Path.Combine(_currentFolder, dialog.NewName);
+                    if (Directory.Exists(newPath))
+                    {
+                        MessageBox.Show(
+                            this,
+                            "같은 이름의 폴더가 이미 있습니다.",
+                            "새 폴더",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Warning);
+                        break;
+                    }
+                    try
+                    {
+                        Directory.CreateDirectory(newPath);
+                    }
+                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+                    {
+                        MessageBox.Show(
+                            this,
+                            $"폴더를 만들 수 없습니다.\n{ex.Message}",
+                            "새 폴더",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Warning);
+                        break;
+                    }
+                    _ = LoadFolder(_currentFolder);
+                    break;
+                }
             case "Open":
                 {
-                    var dialog = new OpenFileDialog
-                    {
-                        Title = "이미지 또는 압축파일 열기",
-                        Filter = MainWindow.OpenFileFilter
-                    };
-
-                    if (dialog.ShowDialog(this) == true)
-                    {
-                        OpenInViewerPath = dialog.FileName;
-                        Close();
-                    }
+                    OpenSelected_Click(this, null);
                     break;
                 }
             case "CloseWindow":
@@ -1648,7 +1759,7 @@ public partial class ListViewWindow : Window
                 _ = DeleteSelectedAsync();
                 break;
             case "Copy":
-                _ = CopySelectedAsync();
+                CopySelectedAsync();
                 break;
             case "Rename":
                 RenameSelected();

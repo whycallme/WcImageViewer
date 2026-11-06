@@ -7,7 +7,7 @@ $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
 $tag = "v$Version"
 $notes = Join-Path $root "docs\releases\$tag.md"
-$publish = Join-Path $root "publish"
+$publish = Join-Path $root "build"
 
 if (-not (Test-Path -LiteralPath $notes)) {
     throw "릴리즈 노트가 없습니다: $notes"
