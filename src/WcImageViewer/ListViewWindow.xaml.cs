@@ -1952,7 +1952,7 @@ public partial class ListViewWindow : Window
                         {
                             frames.Add((source, 0));
                         }
-                        var fileName = Path.GetFileNameWithoutExtension(src);
+                        var fileName = Path.GetFileName(src);
                         var sourceDirectory = Path.GetDirectoryName(src) ?? _currentFolder;
                         var dialog = new SaveAsWindow(source, fileName, sourceDirectory, frames)
                         {

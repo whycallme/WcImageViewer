@@ -1575,7 +1575,7 @@ public partial class MainWindow : Window
         string initialDir;
         if (!string.IsNullOrWhiteSpace(currentPath))
         {
-            suggestedName = Path.GetFileNameWithoutExtension(currentPath);
+            suggestedName = Path.GetFileName(currentPath);
             initialDir = Path.GetDirectoryName(currentPath) ?? "";
         }
         else
@@ -1586,7 +1586,7 @@ public partial class MainWindow : Window
                 ? _source.GetEntry(_index)
                 : null;
             var sourceName = entry?.DisplayName ?? "image";
-            suggestedName = Path.GetFileNameWithoutExtension(sourceName);
+            suggestedName = sourceName;
             initialDir = "";
         }
 
