@@ -1658,6 +1658,8 @@ public partial class ListViewWindow : Window
         AddItem("삭제", "Delete");
         AddItem("새 폴더", "NewFolder");
         menu.Items.Add(new Separator());
+        AddItem("다른 이름으로 저장", "SaveAs");
+        menu.Items.Add(new Separator());
         AddItem("설정", "Settings");
         AddItem("창 닫기", "CloseWindow");
 
@@ -1930,63 +1932,51 @@ public partial class ListViewWindow : Window
                     {
                         break;
                     }
-                    var ext = Path.GetExtension(src);
-                    var filter = string.IsNullOrEmpty(ext)
-                        ? "모든 파일 (*.*)|*.*"
-                        : $"{ext.TrimStart('.').ToUpperInvariant()} 이미지 (*{ext})|*{ext}|모든 파일 (*.*)|*.*";
-                    var sfd = new SaveFileDialog
-                    {
-                        Title = "다른 이름으로 저장",
-                        FileName = Path.GetFileName(src),
-                        AddExtension = true,
-                        Filter = filter,
-                        DefaultExt = ext.TrimStart('.'),
-                        FilterIndex = 1
-                    };
-                    if (sfd.ShowDialog(this) != true)
-                    {
-                        break;
-                    }
-                    static bool ExtEqual(string a, string b)
-                    {
-                        a = (a ?? string.Empty).TrimStart('.').ToLowerInvariant();
-                        b = (b ?? string.Empty).TrimStart('.').ToLowerInvariant();
-                        if (string.IsNullOrEmpty(a) || string.IsNullOrEmpty(b))
-                        {
-                            return true;
-                        }
-                        if (a == b)
-                        {
-                            return true;
-                        }
-                        if ((a == "jpeg" && b == "jpg") || (a == "jpg" && b == "jpeg"))
-                        {
-                            return true;
-                        }
-                        if ((a == "tiff" && b == "tif") || (a == "tif" && b == "tiff"))
-                        {
-                            return true;
-                        }
-                        return false;
-                    }
-                    if (!ExtEqual(ext, Path.GetExtension(sfd.FileName)))
-                    {
-                        MessageBox.Show(this, "다른 이미지 형식으로 저장하는 기능은 지원하지 않습니다.\n같은 확장자로 저장해 주세요.", "다른 이름으로 저장", MessageBoxButton.OK, MessageBoxImage.Information);
-                        break;
-                    }
                     try
                     {
-                        File.Copy(src, sfd.FileName, true);
-                        var destFolder = Path.GetDirectoryName(sfd.FileName);
-                        if (!string.IsNullOrWhiteSpace(destFolder) &&
-                            string.Equals(Path.GetFullPath(destFolder), Path.GetFullPath(_currentFolder), StringComparison.OrdinalIgnoreCase))
+                        using var doc = ImageLoader.LoadDocument(src);
+                        var source = doc.Image;
+                        var frames = new List<(BitmapSource Frame, int DelayMs)>();
+                        if (doc.FrameCount > 1)
                         {
-                            _ = LoadFolder(_currentFolder);
+                            for (var i = 0; i < doc.FrameCount; i++)
+                            {
+                                var f = doc.GetFrame(i);
+                                var d = i < doc.Delays.Count
+                                    ? (int)doc.Delays[i].TotalMilliseconds
+                                    : 100;
+                                frames.Add((f, d));
+                            }
+                        }
+                        else
+                        {
+                            frames.Add((source, 0));
+                        }
+                        var fileName = Path.GetFileNameWithoutExtension(src);
+                        var sourceDirectory = Path.GetDirectoryName(src) ?? _currentFolder;
+                        var dialog = new SaveAsWindow(source, fileName, sourceDirectory, frames)
+                        {
+                            Owner = this
+                        };
+                        var result = dialog.ShowDialog();
+                        if (result == true)
+                        {
+                            if (!string.IsNullOrWhiteSpace(dialog.SavedPath))
+                            {
+                                ShowNotice($"저장됨: {Path.GetFileName(dialog.SavedPath)}");
+                            }
+                            else
+                            {
+                                ShowNotice("저장됨");
+                            }
                         }
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show(this, $"파일을 저장할 수 없습니다.\n{ex.Message}", "다른 이름으로 저장", MessageBoxButton.OK, MessageBoxImage.Error);
+                        var trace = ex.StackTrace is null
+                            ? string.Empty
+                            : string.Join(Environment.NewLine, ex.StackTrace.Split(Environment.NewLine).Take(3));
+                        MessageBox.Show(this, $"파일을 열 수 없습니다.\n{ex.Message}\n{trace}", "다른 이름으로 저장", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                     break;
                 }

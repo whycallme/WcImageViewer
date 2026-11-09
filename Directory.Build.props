@@ -2,6 +2,6 @@
   <!-- 빌드는 build/ 에만, bin/obj/publish 생성 금지 -->
   <PropertyGroup>
     <BaseOutputPath>$(MSBuildThisFileDirectory)build\</BaseOutputPath>
-    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)build\obj\</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)build\obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
   </PropertyGroup>
 </Project>

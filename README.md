@@ -2,7 +2,7 @@
 
 Windows용 가볍고 빠른 이미지 뷰어입니다. 폴더와 압축파일(ZIP/CBZ, 7Z/CB7, RAR/CBR)을 열면 첫 이미지가 바로 표시되며, 설치 없이 실행할 수 있습니다.
 
-최신 버전은 **v1.2.0**입니다. 새 폴더 만들기와 우클릭 컨텍스트 메뉴(단축키 표시)가 추가되었고, 리스트뷰 메뉴가 정리되었습니다. updater는 앱 exe에 내장되어 배포 폴더에는 `WcImageViewer.exe` 하나만 남습니다. 변경 내역은 [릴리즈 페이지](https://github.com/whycallme/WcImageViewer/releases)와 [docs/changelog.md](docs/changelog.md)에서 볼 수 있습니다.
+최신 버전은 **v1.3.0**입니다. "다른 이름으로 저장" 대화창이 추가되어 저장 형식·품질·애니메이션 옵션을 선택할 수 있습니다. updater는 앱 exe에 내장되어 배포 폴더에는 `WcImageViewer.exe` 하나만 남습니다. 변경 내역은 [릴리즈 페이지](https://github.com/whycallme/WcImageViewer/releases)와 [docs/changelog.md](docs/changelog.md)에서 볼 수 있습니다.
 
 ## 다운로드
 

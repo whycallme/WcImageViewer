@@ -1559,53 +1559,72 @@ public partial class MainWindow : Window
             return;
         }
 
-        var entry = _source?.GetEntry(_index);
-        var sourceName = entry?.DisplayName ?? "image";
-        var suggestedName = Path.GetFileNameWithoutExtension(sourceName) + "_copy";
-
-        var dialog = new SaveFileDialog
-        {
-            Title = "다른 이름으로 저장",
-            FileName = suggestedName,
-            DefaultExt = ".png",
-            AddExtension = true,
-            Filter = "PNG 이미지|*.png|JPEG 이미지|*.jpg;*.jpeg|BMP 이미지|*.bmp|TIFF 이미지|*.tif;*.tiff"
-        };
-
-        if (dialog.ShowDialog(this) != true)
-        {
-            return;
-        }
-
         var frame = _document.IsAnimated &&
                     _frameIndex >= 0 &&
                     _frameIndex < _document.FrameCount
             ? _document.GetFrame(_frameIndex)
             : _document.Image;
 
-        var extension = Path.GetExtension(dialog.FileName).ToLowerInvariant();
-        BitmapEncoder encoder = extension switch
+        string? currentPath = _source is not null &&
+                              _index >= 0 &&
+                              _index < _source.Count
+            ? _source.GetFilePath(_index)
+            : null;
+
+        string suggestedName;
+        string initialDir;
+        if (!string.IsNullOrWhiteSpace(currentPath))
         {
-            ".jpg" or ".jpeg" => new JpegBitmapEncoder { QualityLevel = 95 },
-            ".bmp" => new BmpBitmapEncoder(),
-            ".tif" or ".tiff" => new TiffBitmapEncoder(),
-            _ => new PngBitmapEncoder()
+            suggestedName = Path.GetFileNameWithoutExtension(currentPath);
+            initialDir = Path.GetDirectoryName(currentPath) ?? "";
+        }
+        else
+        {
+            var entry = _source is not null &&
+                        _index >= 0 &&
+                        _index < _source.Count
+                ? _source.GetEntry(_index)
+                : null;
+            var sourceName = entry?.DisplayName ?? "image";
+            suggestedName = Path.GetFileNameWithoutExtension(sourceName);
+            initialDir = "";
+        }
+
+        if (string.IsNullOrWhiteSpace(suggestedName))
+        {
+            suggestedName = "image";
+        }
+
+        var frames = new List<(BitmapSource Frame, int DelayMs)>();
+        if (_document.FrameCount > 1)
+        {
+            for (var i = 0; i < _document.FrameCount; i++)
+            {
+                var f = _document.GetFrame(i);
+                var d = i < _document.Delays.Count
+                    ? (int)_document.Delays[i].TotalMilliseconds
+                    : 100;
+                frames.Add((f, d));
+            }
+        }
+        else
+        {
+            frames.Add((frame, 0));
+        }
+
+        var dialog = new SaveAsWindow(frame, suggestedName, initialDir, frames)
+        {
+            Owner = this
         };
 
-        try
+        if (dialog.ShowDialog() != true)
         {
-            encoder.Frames.Add(BitmapFrame.Create(frame));
-            using var stream = File.Create(dialog.FileName);
-            encoder.Save(stream);
+            return;
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+
+        if (!string.IsNullOrWhiteSpace(dialog.SavedPath))
         {
-            MessageBox.Show(
-                this,
-                $"이미지를 저장할 수 없습니다.\n{ex.Message}",
-                "다른 이름으로 저장",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
+            ShowStatus($"저장됨: {dialog.SavedPath}");
         }
     }
 
