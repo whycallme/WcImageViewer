@@ -36,7 +36,9 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
@@ -157,22 +159,22 @@
                               Foreground="{DynamicResource TextBrush}"
                               VerticalAlignment="Center" />
                 </StackPanel>
-
-                <StackPanel x:Name="AnimationPanel" Visibility="Collapsed" Orientation="Vertical" VerticalAlignment="Center">
-                    <CheckBox x:Name="AnimationKeepCheck"
-                              Content="애니메이션 유지"
-                              Foreground="{DynamicResource TextBrush}"
-                              VerticalAlignment="Center"
-                              IsChecked="True" />
-                    <TextBlock x:Name="GifColorNote"
-                               Text="GIF는 256색 제한으로 색상이 줄어들 수 있습니다."
-                               Foreground="{DynamicResource TextBrush}"
-                               FontSize="12"
-                               Margin="0,4,0,0" />
-                </StackPanel>
             </Grid>
 
-            <StackPanel Grid.Row="7"
+            <StackPanel x:Name="AnimationPanel" Grid.Row="7" Visibility="Collapsed" Orientation="Vertical" VerticalAlignment="Center" Margin="0,0,0,8">
+                <CheckBox x:Name="AnimationKeepCheck"
+                          Content="애니메이션 유지"
+                          Foreground="{DynamicResource TextBrush}"
+                          VerticalAlignment="Center"
+                          IsChecked="True" />
+                <TextBlock x:Name="GifColorNote"
+                           Text="GIF는 256색 제한으로 색상이 줄어들 수 있습니다."
+                           Foreground="{DynamicResource TextBrush}"
+                           FontSize="12"
+                           Margin="0,4,0,0" />
+            </StackPanel>
+
+            <StackPanel Grid.Row="9"
                         Orientation="Horizontal"
                         HorizontalAlignment="Right"
                         VerticalAlignment="Bottom">
@@ -180,7 +182,7 @@
                 <Button x:Name="SaveButton" Content="저장" IsDefault="True" Click="OnSaveClick" />
             </StackPanel>
 
-            <StackPanel Grid.Row="8"
+            <StackPanel Grid.Row="10"
                         x:Name="SaveProgressPanel"
                         Visibility="Collapsed"
                         Orientation="Horizontal"
