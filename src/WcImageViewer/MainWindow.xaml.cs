@@ -131,6 +131,7 @@ public partial class MainWindow : Window
 
     public void OpenPath(string path)
     {
+        if (_listWindow is ListViewWindow listView) { listView.CloseForViewerPath(path); return; }
         if (_listWindow is not null)
         {
             try { _listWindow.Close(); } catch { }
@@ -1505,7 +1506,6 @@ public partial class MainWindow : Window
                     return;
                 }
 
-                try { _allowClose = true; } catch { }
                 try { Close(); } catch { try { Application.Current?.Shutdown(); } catch { } }
             };
 
@@ -2667,17 +2667,73 @@ public partial class MainWindow : Window
             return;
         }
 
-        var release = UpdateService.Instance.AvailableRelease;
-        if (release is null || IsSkippedVersion(release.Tag))
+        if (!_settings.AutoCheckUpdates)
         {
+            return;
+        }
+
+        var cached = UpdateService.Instance.AvailableRelease;
+        if (cached is not null)
+        {
+            if (IsSkippedVersion(cached.Tag))
+            {
+                return;
+            }
+
+            e.Cancel = true;
+            _updatePromptOpen = true;
+            Dispatcher.BeginInvoke(
+                new Action(() => CompleteUpdatePrompt(cached)),
+                DispatcherPriority.Normal);
             return;
         }
 
         e.Cancel = true;
         _updatePromptOpen = true;
-        Dispatcher.BeginInvoke(
-            new Action(() => CompleteUpdatePrompt(release)),
-            DispatcherPriority.Normal);
+        _ = RunExitUpdateCheckAsync();
+    }
+
+    private async Task RunExitUpdateCheckAsync()
+    {
+        var prompted = false;
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(4));
+            UpdateCheckResult result;
+            try
+            {
+                result = await UpdateService.Instance.CheckAsync(AppVersion.Current, manual: false, cts.Token);
+            }
+            catch
+            {
+                _settings.LastUpdateCheckUtc = UpdateService.Instance.LastCheckUtc;
+                SaveUpdateState();
+                _allowClose = true;
+                Close();
+                return;
+            }
+
+            _settings.LastUpdateCheckUtc = UpdateService.Instance.LastCheckUtc;
+            SaveUpdateState();
+
+            if (result.Status == UpdateCheckStatus.Available && result.Release is not null && !IsSkippedVersion(result.Release.Tag))
+            {
+                prompted = true;
+                CompleteUpdatePrompt(result.Release);
+            }
+            else
+            {
+                _allowClose = true;
+                Close();
+            }
+        }
+        finally
+        {
+            if (!prompted)
+            {
+                _updatePromptOpen = false;
+            }
+        }
     }
 
     internal void CompleteUpdatePrompt(UpdateRelease release)
@@ -2693,6 +2749,8 @@ public partial class MainWindow : Window
 
             if (!ShowUpdatePrompt(release))
             {
+                _allowClose = true;
+                Close();
                 return;
             }
 
@@ -2742,6 +2800,7 @@ public partial class MainWindow : Window
             // 프롬프트 표시 실패 시에도 pending을 clear해 무한루프를 막는다.
             _settings.PendingUpdate = null;
             SaveUpdateState();
+            UpdateService.Instance.Initialize(null, UpdateService.Instance.LastCheckUtc);
             MessageBox.Show(
                 this,
                 $"업데이트 창을 열 수 없습니다.\n{ex.Message}",
