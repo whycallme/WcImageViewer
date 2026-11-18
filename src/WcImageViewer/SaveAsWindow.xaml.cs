@@ -198,11 +198,57 @@ public partial class SaveAsWindow : Window
         _saveCts.Cancel();
     }
 
-    private static BitmapSource CreateFrozenCopy(BitmapSource source)
+    private sealed record PixelSnapshot(
+        byte[] Pixels,
+        int Width,
+        int Height,
+        double DpiX,
+        double DpiY,
+        int Stride);
+
+    private static PixelSnapshot CopyPixelsSnapshot(BitmapSource source)
     {
-        var copy = new FormatConvertedBitmap(source, PixelFormats.Bgra32, null, 0);
-        copy.Freeze();
-        return copy;
+        try
+        {
+            return CopyPixelsSnapshotCore(source);
+        }
+        catch (InvalidOperationException)
+        {
+            // 소스가 다른 스레드 소유면 소유 스레드에서 복사한다.
+            var dispatcher = source.Dispatcher;
+            if (dispatcher is not null && !dispatcher.CheckAccess())
+            {
+                return dispatcher.Invoke(() => CopyPixelsSnapshotCore(source));
+            }
+
+            throw;
+        }
+    }
+
+    private static PixelSnapshot CopyPixelsSnapshotCore(BitmapSource source)
+    {
+        var converted = new FormatConvertedBitmap(source, PixelFormats.Bgra32, null, 0);
+        var width = converted.PixelWidth;
+        var height = converted.PixelHeight;
+        var stride = width * 4;
+        var pixels = new byte[stride * height];
+        converted.CopyPixels(pixels, stride, 0);
+        return new PixelSnapshot(pixels, width, height, source.DpiX, source.DpiY, stride);
+    }
+
+    private static BitmapSource CreateFromSnapshot(PixelSnapshot snapshot)
+    {
+        var bitmap = BitmapSource.Create(
+            snapshot.Width,
+            snapshot.Height,
+            snapshot.DpiX,
+            snapshot.DpiY,
+            PixelFormats.Bgra32,
+            null,
+            snapshot.Pixels,
+            snapshot.Stride);
+        bitmap.Freeze();
+        return bitmap;
     }
 
     private async void OnSaveClick(object sender, RoutedEventArgs e)
@@ -306,10 +352,12 @@ public partial class SaveAsWindow : Window
 
         try
         {
-            var frozenSource = CreateFrozenCopy(_source);
-            var frozenFrames = _frames
-                .Select(f => (CreateFrozenCopy(f.Frame), f.DelayMs))
-                .ToList();
+            var frozenSource = keepAnimation ? null : CopyPixelsSnapshot(_source);
+            var frozenFrames = keepAnimation
+                ? _frames
+                    .Select(f => (CopyPixelsSnapshot(f.Frame), f.DelayMs))
+                    .ToList()
+                : null;
             var optionsCopy = new ImageSaveOptions
             {
                 JpegQuality = options.JpegQuality,
@@ -323,11 +371,14 @@ public partial class SaveAsWindow : Window
             {
                 if (keepAnimation)
                 {
-                    ImageEncoderService.SaveFrames(frozenFrames, format, optionsCopy, fullPath, cancellationToken);
+                    var frames = frozenFrames!
+                        .Select(f => (CreateFromSnapshot(f.Item1), f.Item2))
+                        .ToList();
+                    ImageEncoderService.SaveFrames(frames, format, optionsCopy, fullPath, cancellationToken);
                 }
                 else
                 {
-                    ImageEncoderService.Save(frozenSource, format, optionsCopy, fullPath, cancellationToken);
+                    ImageEncoderService.Save(CreateFromSnapshot(frozenSource!), format, optionsCopy, fullPath, cancellationToken);
                 }
             }, cancellationToken);
         }
@@ -359,7 +410,7 @@ public partial class SaveAsWindow : Window
             _closeRequested = false;
             MessageBox.Show(
                 this,
-                $"이미지를 저장할 수 없습니다.\n{ex.Message}",
+                $"이미지를 저장할 수 없습니다.\n{ex.Message} ({ex.GetType().Name})",
                 "다른 이름으로 저장",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);

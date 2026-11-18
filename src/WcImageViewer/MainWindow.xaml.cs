@@ -762,9 +762,39 @@ public partial class MainWindow : Window
     {
         StopAnimation();
         _document = document;
+
+        var autoFit = !_isFullscreen && _settings.AutoFitWindowToImage;
+        var fitComputed = false;
+        var fitScale = 1.0;
+        if (autoFit)
+        {
+            // Compute the fit from the image size first, then resize the window once,
+            // so the image is drawn only after the window has its final size.
+            if (WindowState == WindowState.Maximized)
+            {
+                WindowState = WindowState.Normal;
+            }
+
+            UpdateLayout();
+            fitComputed = TryComputeFit(out fitScale, out var fitWidth, out var fitHeight, out var fitLeft, out var fitTop);
+            if (fitComputed)
+            {
+                Width = fitWidth;
+                Height = fitHeight;
+                Left = fitLeft;
+                Top = fitTop;
+                UpdateLayout();
+            }
+        }
+
         Viewer.SetImage(document.Image, document.Tiles);
 
-        if (!_isFullscreen && _settings.AutoFitWindowToImage)
+        if (fitComputed)
+        {
+            UpdateLayout();
+            Viewer.SetZoom(fitScale);
+        }
+        else if (autoFit)
         {
             FitWindowToImage();
         }
@@ -1197,6 +1227,32 @@ public partial class MainWindow : Window
 
         UpdateLayout();
 
+        if (!TryComputeFit(out var scale, out var targetWidth, out var targetHeight, out var targetLeft, out var targetTop))
+        {
+            return;
+        }
+
+        Width = targetWidth;
+        Height = targetHeight;
+        Left = targetLeft;
+        Top = targetTop;
+        UpdateLayout();
+        Viewer.SetZoom(scale);
+    }
+
+    private bool TryComputeFit(out double scale, out double targetWidth, out double targetHeight, out double targetLeft, out double targetTop)
+    {
+        scale = 1.0;
+        targetWidth = Width;
+        targetHeight = Height;
+        targetLeft = Left;
+        targetTop = Top;
+
+        if (_document is null)
+        {
+            return false;
+        }
+
         var chromeWidth = Math.Max(0, ActualWidth - Viewer.ActualWidth);
         var chromeHeight = Math.Max(0, ActualHeight - Viewer.ActualHeight);
         var workArea = SystemParameters.WorkArea;
@@ -1209,7 +1265,6 @@ public partial class MainWindow : Window
         var imageWidth = _document.PixelWidth;
         var imageHeight = _document.PixelHeight;
 
-        double scale;
         if (imageWidth > workViewportWidth || imageHeight > workViewportHeight)
         {
             // Fit the whole image into the usable screen area.
@@ -1238,29 +1293,24 @@ public partial class MainWindow : Window
 
         var displayedWidth = imageWidth * scale;
         var displayedHeight = imageHeight * scale;
-        var targetWidth = Math.Clamp(displayedWidth + chromeWidth, MinWidth, workArea.Width);
-        var targetHeight = Math.Clamp(displayedHeight + chromeHeight, MinHeight, workArea.Height);
+        targetWidth = Math.Clamp(displayedWidth + chromeWidth, MinWidth, workArea.Width);
+        targetHeight = Math.Clamp(displayedHeight + chromeHeight, MinHeight, workArea.Height);
 
         // Resize around the current window center so the image stays put on screen.
         var currentWidth = ActualWidth > 0 ? ActualWidth : Width;
         var currentHeight = ActualHeight > 0 ? ActualHeight : Height;
 
-        var targetLeft = !_hasPositionedWindow || double.IsNaN(Left)
+        targetLeft = !_hasPositionedWindow || double.IsNaN(Left)
             ? workArea.Left + (workArea.Width - targetWidth) / 2
             : Left + (currentWidth - targetWidth) / 2;
-        var targetTop = !_hasPositionedWindow || double.IsNaN(Top)
+        targetTop = !_hasPositionedWindow || double.IsNaN(Top)
             ? workArea.Top + (workArea.Height - targetHeight) / 2
             : Top + (currentHeight - targetHeight) / 2;
         _hasPositionedWindow = true;
 
-        Width = targetWidth;
-        Height = targetHeight;
-        Left = Math.Clamp(targetLeft, workArea.Left, workArea.Right - targetWidth);
-        Top = Math.Clamp(targetTop, workArea.Top, workArea.Bottom - targetHeight);
-
-        Dispatcher.BeginInvoke(
-            new Action(() => Viewer.SetZoom(scale)),
-            DispatcherPriority.Loaded);
+        targetLeft = Math.Clamp(targetLeft, workArea.Left, workArea.Right - targetWidth);
+        targetTop = Math.Clamp(targetTop, workArea.Top, workArea.Bottom - targetHeight);
+        return true;
     }
 
     private bool TryExecuteShortcut(KeyEventArgs e)
