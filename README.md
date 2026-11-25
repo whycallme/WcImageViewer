@@ -2,7 +2,7 @@
 
 Windows용 가볍고 빠른 이미지 뷰어입니다. 폴더와 압축파일(ZIP/CBZ, 7Z/CB7, RAR/CBR)을 열면 첫 이미지가 바로 표시되며, 설치 없이 실행할 수 있습니다.
 
-최신 버전은 **v1.3.0**입니다. "다른 이름으로 저장" 대화창이 추가되어 저장 형식·품질·애니메이션 옵션을 선택할 수 있습니다. updater는 앱 exe에 내장되어 배포 폴더에는 `WcImageViewer.exe` 하나만 남습니다. 변경 내역은 [릴리즈 페이지](https://github.com/whycallme/WcImageViewer/releases)와 [docs/changelog.md](docs/changelog.md)에서 볼 수 있습니다.
+최신 버전은 **v1.4.0**입니다. "다른 이름으로 저장" 대화창이 추가되어 저장 형식·품질·애니메이션 옵션을 선택할 수 있습니다. 현재 이미지를 인쇄하는 인쇄 대화창(Ctrl+P)이 추가되었습니다. updater는 앱 exe에 내장되어 배포 폴더에는 `WcImageViewer.exe` 하나만 남습니다. 변경 내역은 [릴리즈 페이지](https://github.com/whycallme/WcImageViewer/releases)와 [docs/changelog.md](docs/changelog.md)에서 볼 수 있습니다.
 
 ## 다운로드
 
@@ -38,7 +38,7 @@ WcImageViewer.exe "C:\images\photos.zip"
 - 이미지를 열 때 표시 크기에 맞춰 창 조정 (기본 켜짐, 작은 이미지는 확대하지 않음 기본 켜짐)
 - Tab 이미지 정보 오버레이, F2 이름 바꾸기, Del 삭제(확인/휴지통 설정)
 - Enter 리스트뷰 창 (4분할: 폴더 트리 / 큰 미리보기 / 썸네일 목록 / 파일 정보), 다중 선택 삭제·복사·이동
-- Ctrl+E 편집 앱으로 열기, Ctrl+C 이미지 복사, F12 다른 이름으로 저장
+- Ctrl+E 편집 앱으로 열기, Ctrl+C 이미지 복사, F12 다른 이름으로 저장, Ctrl+P 인쇄 대화창
 - F6 책갈피 관리, 최근 항목 메뉴
 - 이미지 영역 드래그로 창 이동
 - 새 폴더 만들기 (툴바 버튼, 우클릭 메뉴, 기본 단축키 Ctrl+Shift+N)
@@ -65,10 +65,11 @@ WcImageViewer.exe "C:\images\photos.zip"
 | W | 이미지 크기에 창 맞춤 |
 | F3 | 파일 열기 |
 | F4 | 현재 이미지 닫기 |
-| F5 | 설정 |
+| F5 | 새로 고침 (뷰어: 보기 크기·창 크기·이미지 다시 맞춤, 리스트뷰: 전체 새로고침) |
 | F6 | 책갈피 관리 |
 | F11 | 전체화면 |
 | F12 | 다른 이름으로 저장 |
+| Ctrl+P | 현재 이미지 인쇄 (인쇄 대화창) |
 | S | 슬라이드쇼 시작·중지 |
 | T | 썸네일 스트립 고정 표시·숨김 |
 | Tab | 이미지 정보 오버레이 표시·숨김 |
@@ -77,7 +78,7 @@ WcImageViewer.exe "C:\images\photos.zip"
 | Delete | 파일 삭제 (설정에 따름) |
 | Ctrl+E | 설정한 편집 앱으로 열기 |
 | Ctrl+C | 현재 이미지를 클립보드로 복사 |
-| Ctrl+, | 설정 (F5와 동일) |
+| Ctrl+, | 설정 |
 | Ctrl+Shift+N | 새 폴더 만들기 |
 | Esc | 창 닫기 |
 

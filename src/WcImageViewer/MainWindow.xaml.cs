@@ -1240,6 +1240,22 @@ public partial class MainWindow : Window
         Viewer.SetZoom(scale);
     }
 
+    private void RefreshView()
+    {
+        // 이미지 캐시를 비워 현재 이미지를 디스크에서 다시 읽게 한다.
+        _imageCache.Clear();
+
+        // 소스/인덱스 가드는 LoadCurrentAsync 내부에서 처리한다.
+        _ = LoadCurrentAsync();
+
+        // 자동 맞춤(전체화면 제외)이면 LoadCurrentAsync → DisplayDocument 가 창 맞춤을 처리하므로 중복 호출하지 않는다.
+        // 아니면 보기 크기만 재설정한다 (기본 줌은 유지).
+        if (_isFullscreen || !_settings.AutoFitWindowToImage)
+        {
+            Viewer.FitToWindow();
+        }
+    }
+
     private bool TryComputeFit(out double scale, out double targetWidth, out double targetHeight, out double targetLeft, out double targetTop)
     {
         scale = 1.0;
@@ -1368,6 +1384,9 @@ public partial class MainWindow : Window
             case "SaveAs":
                 SaveCurrentAs();
                 break;
+            case "Print":
+                PrintCurrentImage();
+                break;
             case "Previous":
             case "Back":
                 Navigate(-1);
@@ -1406,6 +1425,9 @@ public partial class MainWindow : Window
                 break;
             case "WindowFit":
                 FitWindowToImage();
+                break;
+            case "Refresh":
+                RefreshView();
                 break;
             case "Slideshow":
                 ToggleSlideshow();
@@ -1676,6 +1698,19 @@ public partial class MainWindow : Window
         {
             ShowStatus($"저장됨: {dialog.SavedPath}");
         }
+    }
+
+    private void PrintCurrentImage()
+    {
+        if (_document is null) return;
+        var image = _document.IsAnimated && _frameIndex >= 0 && _frameIndex < _document.FrameCount
+            ? _document.GetFrame(_frameIndex)
+            : _document.Image;
+        var name = _source is not null && _index >= 0 && _index < _source.Count
+            ? _source.GetEntry(_index)?.DisplayName ?? "image"
+            : "image";
+        var dialog = new PrintWindow(image, name) { Owner = this };
+        dialog.ShowDialog();
     }
 
     private void OpenBookmarks()
@@ -2567,7 +2602,9 @@ public partial class MainWindow : Window
         menu.Items.Add(new Separator());
         AddItem("편집 앱으로 열기", "Edit");
         AddItem("다른 이름으로 저장", "SaveAs");
+        AddItem("인쇄", "Print");
         menu.Items.Add(new Separator());
+        AddItem("새로 고침", "Refresh");
         AddItem("설정", "Settings");
         AddItem("창 닫기", "CloseWindow");
 

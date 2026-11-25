@@ -16,10 +16,12 @@ public static class ShortcutService
     {
         new ShortcutDefinition("Open", "파일 열기", "F3|Ctrl+O"),
         new ShortcutDefinition("CloseImage", "현재 이미지 닫기", "F4"),
-        new ShortcutDefinition("Settings", "설정", "F5|Ctrl+Comma"),
+        new ShortcutDefinition("Settings", "설정", "Ctrl+Comma"),
+        new ShortcutDefinition("Refresh", "새로 고침", "F5"),
         new ShortcutDefinition("Bookmarks", "책갈피 관리", "F6"),
         new ShortcutDefinition("Fullscreen", "전체화면", "F11"),
         new ShortcutDefinition("SaveAs", "다른 이름으로 저장", "F12"),
+        new ShortcutDefinition("Print", "인쇄", "Ctrl+P"),
         new ShortcutDefinition("Previous", "이전 이미지", "Left|Up|PageUp|Backspace"),
         new ShortcutDefinition("Next", "다음 이미지", "Right|Down|PageDown|Space"),
         new ShortcutDefinition("First", "첫 이미지", "Home"),

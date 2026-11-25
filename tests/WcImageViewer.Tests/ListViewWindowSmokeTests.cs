@@ -30,6 +30,7 @@ public class ListViewWindowSmokeTests
                 if (Application.Current is null)
                 {
                     var app = new Application();
+                    app.ShutdownMode = ShutdownMode.OnExplicitShutdown;
                     var dict = new ResourceDictionary();
                     dict.Source = new Uri("pack://application:,,,/WcImageViewer;component/Styles/DarkTheme.xaml");
                     app.Resources.MergedDictionaries.Add(dict);

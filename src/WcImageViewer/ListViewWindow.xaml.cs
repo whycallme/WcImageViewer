@@ -1153,12 +1153,17 @@ public partial class ListViewWindow : Window
         }
     }
 
-    private void RefreshButton_Click(object sender, RoutedEventArgs e)
+    private void RefreshAll()
     {
         if (!string.IsNullOrEmpty(_currentFolder))
         {
             _ = LoadFolder(_currentFolder);
         }
+    }
+
+    private void RefreshButton_Click(object sender, RoutedEventArgs e)
+    {
+        RefreshAll();
     }
 
     private async void SlideshowButton_Click(object sender, RoutedEventArgs e)
@@ -1631,6 +1636,8 @@ public partial class ListViewWindow : Window
         AddItem("새 폴더", "NewFolder");
         menu.Items.Add(new Separator());
         AddItem("다른 이름으로 저장", "SaveAs");
+        AddItem("인쇄", "Print");
+        AddItem("새로 고침", "Refresh");
         menu.Items.Add(new Separator());
         AddItem("설정", "Settings");
         AddItem("창 닫기", "CloseWindow");
@@ -1737,6 +1744,9 @@ public partial class ListViewWindow : Window
                 break;
             case "Rename":
                 RenameSelected();
+                break;
+            case "Refresh":
+                RefreshAll();
                 break;
             case "Settings":
                 {
@@ -1952,6 +1962,9 @@ public partial class ListViewWindow : Window
                     }
                     break;
                 }
+            case "Print":
+                PrintSelectedImage();
+                break;
             case "ParentFolder":
                 UpButton_Click(this, new RoutedEventArgs());
                 break;
@@ -1961,6 +1974,28 @@ public partial class ListViewWindow : Window
             case "Forward":
                 ForwardButton_Click(this, new RoutedEventArgs());
                 break;
+        }
+    }
+
+    private void PrintSelectedImage()
+    {
+        var files = thumbList.SelectedPaths.ToList();
+        if (files.Count != 1)
+        {
+            ShowNotice("인쇄할 이미지를 하나만 선택하세요.");
+            return;
+        }
+        var src = files[0];
+        if (Directory.Exists(src)) return;
+        try
+        {
+            using var doc = ImageLoader.LoadDocument(src);
+            var dialog = new PrintWindow(doc.Image, Path.GetFileName(src)) { Owner = this };
+            dialog.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, $"파일을 열 수 없습니다.\n{ex.Message}", "인쇄", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 

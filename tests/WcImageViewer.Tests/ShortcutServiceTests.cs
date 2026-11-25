@@ -12,7 +12,8 @@ public class ShortcutServiceTests
 
         Assert.Equal("F3|Ctrl+O", shortcuts["Open"]);
         Assert.Equal("F4", shortcuts["CloseImage"]);
-        Assert.Equal("F5|Ctrl+Comma", shortcuts["Settings"]);
+        Assert.Equal("Ctrl+Comma", shortcuts["Settings"]);
+        Assert.Equal("F5", shortcuts["Refresh"]);
         Assert.Equal("F6", shortcuts["Bookmarks"]);
         Assert.Equal("F11", shortcuts["Fullscreen"]);
         Assert.Equal("F12", shortcuts["SaveAs"]);
@@ -115,5 +116,13 @@ public class ShortcutServiceTests
 
         Assert.False(map.ContainsKey("Open"));
         Assert.Equal("F5", map["CloseImage"]);
+    }
+
+    [Fact]
+    public void PrintDefaultIsCtrlP()
+    {
+        var shortcuts = ShortcutService.GetEffective(null);
+
+        Assert.Equal("Ctrl+P", shortcuts["Print"]);
     }
 }
