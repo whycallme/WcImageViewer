@@ -23,11 +23,27 @@
                        TextTrimming="CharacterEllipsis" />
         </StackPanel>
 
-        <Button Grid.Column="1"
-                Content="&#xE8BB;"
-                Style="{StaticResource CloseWindowButtonStyle}"
-                ToolTip="닫기"
-                AutomationProperties.Name="닫기"
-                Click="OnCloseClick" />
+        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+            <Button x:Name="MinimizeButton"
+                    Content="&#xE921;"
+                    Style="{StaticResource WindowButtonStyle}"
+                    Visibility="Collapsed"
+                    ToolTip="최소화"
+                    AutomationProperties.Name="최소화"
+                    Click="OnMinimizeClick" />
+            <Button x:Name="MaximizeButton"
+                    Style="{StaticResource WindowButtonStyle}"
+                    Visibility="Collapsed"
+                    ToolTip="최대화"
+                    AutomationProperties.Name="최대화"
+                    Click="OnMaximizeClick">
+                <TextBlock x:Name="MaximizeGlyph" Text="&#xE922;" />
+            </Button>
+            <Button Content="&#xE8BB;"
+                    Style="{StaticResource CloseWindowButtonStyle}"
+                    ToolTip="닫기"
+                    AutomationProperties.Name="닫기"
+                    Click="OnCloseClick" />
+        </StackPanel>
     </Grid>
 </UserControl>

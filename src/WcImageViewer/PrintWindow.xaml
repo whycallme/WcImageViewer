@@ -51,16 +51,38 @@
                           Height="28"
                           Margin="0,0,0,12" />
 
+                <TextBlock Text="매수"
+                           Foreground="{DynamicResource TextBrush}"
+                           Margin="0,0,0,6" />
+                <TextBox x:Name="CopiesBox"
+                         Width="56"
+                         Height="28"
+                         Text="1"
+                         Margin="0,0,0,12"
+                         Background="{DynamicResource SurfaceBrush}"
+                         Foreground="{DynamicResource TextBrush}"
+                         BorderBrush="{DynamicResource InputBorderBrush}"
+                         BorderThickness="1"
+                         Padding="6,3" />
+
                 <TextBlock Text="용지"
                            Foreground="{DynamicResource TextBrush}"
                            Margin="0,0,0,6" />
                 <ComboBox x:Name="PaperBox"
                           Height="28"
                           Margin="0,0,0,12">
-                    <ComboBoxItem Content="A4" Tag="{x:Static services:PrintPaperSize.A4}" IsSelected="True" />
-                    <ComboBoxItem Content="A5" Tag="{x:Static services:PrintPaperSize.A5}" />
-                    <ComboBoxItem Content="레터" Tag="{x:Static services:PrintPaperSize.Letter}" />
-                    <ComboBoxItem Content="리걸" Tag="{x:Static services:PrintPaperSize.Legal}" />
+                    <ComboBoxItem Content="A0 (841×1189mm)" Tag="{x:Static services:PrintPaperSize.A0}" />
+                    <ComboBoxItem Content="A1 (594×841mm)" Tag="{x:Static services:PrintPaperSize.A1}" />
+                    <ComboBoxItem Content="A2 (420×594mm)" Tag="{x:Static services:PrintPaperSize.A2}" />
+                    <ComboBoxItem Content="A3 (297×420mm)" Tag="{x:Static services:PrintPaperSize.A3}" />
+                    <ComboBoxItem Content="A4 (210×297mm)" Tag="{x:Static services:PrintPaperSize.A4}" IsSelected="True" />
+                    <ComboBoxItem Content="A5 (148×210mm)" Tag="{x:Static services:PrintPaperSize.A5}" />
+                    <ComboBoxItem Content="A6 (105×148mm)" Tag="{x:Static services:PrintPaperSize.A6}" />
+                    <ComboBoxItem Content="B4 (250×353mm)" Tag="{x:Static services:PrintPaperSize.B4}" />
+                    <ComboBoxItem Content="B5 (176×250mm)" Tag="{x:Static services:PrintPaperSize.B5}" />
+                    <ComboBoxItem Content="B6 (125×176mm)" Tag="{x:Static services:PrintPaperSize.B6}" />
+                    <ComboBoxItem Content="레터 (215.9×279.4mm)" Tag="{x:Static services:PrintPaperSize.Letter}" />
+                    <ComboBoxItem Content="리걸 (215.9×355.6mm)" Tag="{x:Static services:PrintPaperSize.Legal}" />
                 </ComboBox>
 
                 <TextBlock Text="방향"
@@ -92,59 +114,67 @@
                            Foreground="{DynamicResource TextBrush}"
                            Margin="0,0,0,6" />
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                    <TextBox x:Name="MarginLeftBox"
-                             Width="56"
-                             Height="28"
-                             Text="10"
-                             Margin="0,0,6,0"
-                             Background="{DynamicResource SurfaceBrush}"
-                             Foreground="{DynamicResource TextBrush}"
-                             BorderBrush="{DynamicResource InputBorderBrush}"
-                             BorderThickness="1"
-                             Padding="6,3" />
-                    <TextBox x:Name="MarginTopBox"
-                             Width="56"
-                             Height="28"
-                             Text="10"
-                             Margin="0,0,6,0"
-                             Background="{DynamicResource SurfaceBrush}"
-                             Foreground="{DynamicResource TextBrush}"
-                             BorderBrush="{DynamicResource InputBorderBrush}"
-                             BorderThickness="1"
-                             Padding="6,3" />
-                    <TextBox x:Name="MarginRightBox"
-                             Width="56"
-                             Height="28"
-                             Text="10"
-                             Margin="0,0,6,0"
-                             Background="{DynamicResource SurfaceBrush}"
-                             Foreground="{DynamicResource TextBrush}"
-                             BorderBrush="{DynamicResource InputBorderBrush}"
-                             BorderThickness="1"
-                             Padding="6,3" />
-                    <TextBox x:Name="MarginBottomBox"
-                             Width="56"
-                             Height="28"
-                             Text="10"
-                             Background="{DynamicResource SurfaceBrush}"
-                             Foreground="{DynamicResource TextBrush}"
-                             BorderBrush="{DynamicResource InputBorderBrush}"
-                             BorderThickness="1"
-                             Padding="6,3" />
+                    <StackPanel Margin="0,0,6,0">
+                        <TextBlock Text="좌"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource TextBrush}"
+                                   Margin="0,0,0,2" />
+                        <TextBox x:Name="MarginLeftBox"
+                                 Width="56"
+                                 Height="28"
+                                 Text="10"
+                                 Background="{DynamicResource SurfaceBrush}"
+                                 Foreground="{DynamicResource TextBrush}"
+                                 BorderBrush="{DynamicResource InputBorderBrush}"
+                                 BorderThickness="1"
+                                 Padding="6,3" />
+                    </StackPanel>
+                    <StackPanel Margin="0,0,6,0">
+                        <TextBlock Text="상"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource TextBrush}"
+                                   Margin="0,0,0,2" />
+                        <TextBox x:Name="MarginTopBox"
+                                 Width="56"
+                                 Height="28"
+                                 Text="10"
+                                 Background="{DynamicResource SurfaceBrush}"
+                                 Foreground="{DynamicResource TextBrush}"
+                                 BorderBrush="{DynamicResource InputBorderBrush}"
+                                 BorderThickness="1"
+                                 Padding="6,3" />
+                    </StackPanel>
+                    <StackPanel Margin="0,0,6,0">
+                        <TextBlock Text="우"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource TextBrush}"
+                                   Margin="0,0,0,2" />
+                        <TextBox x:Name="MarginRightBox"
+                                 Width="56"
+                                 Height="28"
+                                 Text="10"
+                                 Background="{DynamicResource SurfaceBrush}"
+                                 Foreground="{DynamicResource TextBrush}"
+                                 BorderBrush="{DynamicResource InputBorderBrush}"
+                                 BorderThickness="1"
+                                 Padding="6,3" />
+                    </StackPanel>
+                    <StackPanel>
+                        <TextBlock Text="하"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource TextBrush}"
+                                   Margin="0,0,0,2" />
+                        <TextBox x:Name="MarginBottomBox"
+                                 Width="56"
+                                 Height="28"
+                                 Text="10"
+                                 Background="{DynamicResource SurfaceBrush}"
+                                 Foreground="{DynamicResource TextBrush}"
+                                 BorderBrush="{DynamicResource InputBorderBrush}"
+                                 BorderThickness="1"
+                                 Padding="6,3" />
+                    </StackPanel>
                 </StackPanel>
-
-                <TextBlock Text="매수"
-                           Foreground="{DynamicResource TextBrush}"
-                           Margin="0,0,0,6" />
-                <TextBox x:Name="CopiesBox"
-                         Width="56"
-                         Height="28"
-                         Text="1"
-                         Background="{DynamicResource SurfaceBrush}"
-                         Foreground="{DynamicResource TextBrush}"
-                         BorderBrush="{DynamicResource InputBorderBrush}"
-                         BorderThickness="1"
-                         Padding="6,3" />
             </StackPanel>
 
             <Border x:Name="PreviewBorder"

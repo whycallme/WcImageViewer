@@ -22,6 +22,41 @@ public class PrintLayoutTests
     }
 
     [Fact]
+    public void A0PortraitPaperSize()
+    {
+        var s = PrintLayoutCalculator.GetPaperSizeDip(PrintPaperSize.A0, PrintOrientation.Portrait);
+        Assert.Equal(3178.6, s.Width, 1);
+        Assert.Equal(4493.9, s.Height, 1);
+    }
+
+    [Fact]
+    public void B5PortraitPaperSize()
+    {
+        var s = PrintLayoutCalculator.GetPaperSizeDip(PrintPaperSize.B5, PrintOrientation.Portrait);
+        Assert.Equal(665.2, s.Width, 1);
+        Assert.Equal(944.9, s.Height, 1);
+    }
+
+    [Fact]
+    public void A6LandscapePaperSize()
+    {
+        var s = PrintLayoutCalculator.GetPaperSizeDip(PrintPaperSize.A6, PrintOrientation.Landscape);
+        Assert.Equal(559.4, s.Width, 1);
+        Assert.Equal(396.9, s.Height, 1);
+    }
+
+    [Fact]
+    public void AllPaperSizesHavePositiveDimensions()
+    {
+        foreach (var paper in Enum.GetValues<PrintPaperSize>())
+        {
+            var s = PrintLayoutCalculator.GetPaperSizeDip(paper, PrintOrientation.Portrait);
+            Assert.True(s.Width > 0, $"{paper} width must be positive");
+            Assert.True(s.Height > 0, $"{paper} height must be positive");
+        }
+    }
+
+    [Fact]
     public void PrintableAreaWith10mmMargins()
     {
         var paper = PrintLayoutCalculator.GetPaperSizeDip(PrintPaperSize.A4, PrintOrientation.Portrait);

@@ -46,6 +46,7 @@ public partial class ListViewWindow : Window
     private string _currentFolder = string.Empty;
     private int _itemCount;
     private readonly List<ListSorter.ImageEntry> _currentEntries = new();
+    private List<ThumbItem> _currentFolderItems = new();
     private ListViewPrefs _currentPrefs = new();
     private bool _applyingUI;
     private DispatcherTimer? _prefsSaveTimer;
@@ -466,12 +467,14 @@ public partial class ListViewWindow : Window
 
         _currentEntries.Clear();
         _currentEntries.AddRange(entries);
+        _currentFolderItems = items.Where(i => i.IsFolder).ToList();
         _currentPrefs = prefs;
 
         _applyingUI = true;
         sizeSlider.Value = prefs.ThumbSize;
         sortCombo.SelectedIndex = SortKeyToIndex(prefs.SortKey);
         sortDescToggle.IsChecked = prefs.SortDescending;
+        UpdateSortDescToggleText();
         _applyingUI = false;
 
         thumbList.TileSize = prefs.ThumbSize;
@@ -1097,6 +1100,13 @@ public partial class ListViewWindow : Window
         {
             moveButton.IsEnabled = has;
         }
+        if (printButton is not null)
+        {
+            var selected = thumbList.SelectedPaths;
+            printButton.IsEnabled = selected.Count == 1
+                && !string.IsNullOrEmpty(selected[0])
+                && !Directory.Exists(selected[0]);
+        }
     }
 
     private void UpdateNavigationButtons()
@@ -1266,8 +1276,18 @@ public partial class ListViewWindow : Window
         SavePrefsNow();
     }
 
+    private void UpdateSortDescToggleText()
+    {
+        if (sortDescToggle is null)
+        {
+            return;
+        }
+        sortDescToggle.Content = sortDescToggle.IsChecked == true ? "내림차순" : "오름차순";
+    }
+
     private void SortDescToggle_Changed(object sender, RoutedEventArgs e)
     {
+        UpdateSortDescToggleText();
         if (!IsInitialized || _applyingUI || sortDescToggle is null || thumbList is null)
         {
             return;
@@ -1288,7 +1308,7 @@ public partial class ListViewWindow : Window
         var sorted = ListSorter.Sort(_currentEntries, _currentPrefs.SortKey, _currentPrefs.SortDescending);
         _currentEntries.Clear();
         _currentEntries.AddRange(sorted);
-        var items = sorted.Select(e => new ThumbItem(e.Path, e.Name)).ToList();
+        var items = _currentFolderItems.Concat(sorted.Select(e => new ThumbItem(e.Path, e.Name))).ToList();
         thumbList.SetItems(items);
         _ = LoadThumbnailResolutionsAsync(items, _folderCts?.Token ?? CancellationToken.None);
         UpdateActionButtons();
@@ -1586,6 +1606,8 @@ public partial class ListViewWindow : Window
     }
 
     private void NewFolderButton_Click(object sender, RoutedEventArgs e) => ExecuteListViewShortcut("NewFolder");
+
+    private void PrintButton_Click(object sender, RoutedEventArgs e) => ExecuteListViewShortcut("Print");
 
     private void OnMouseRightButtonDown(object sender, MouseButtonEventArgs e)
     {

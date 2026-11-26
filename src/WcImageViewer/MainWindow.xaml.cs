@@ -2852,11 +2852,32 @@ public partial class MainWindow : Window
         }
     }
 
+    // 보인 적 없거나 숨겨진 창을 대화상자 Owner 로 지정하면 InvalidOperationException
+    // 이 나거나 대화상자가 보이지 않는다. 순수 판단 로직만 헬퍼로 빼 단위테스트를 가능케 한다.
+    internal static bool CanUseAsUpdatePromptOwner(bool isVisible, IntPtr handle)
+        => isVisible && handle != IntPtr.Zero;
+
     private bool ShowUpdatePrompt(UpdateRelease release)
     {
+        // IsVisible 이 false 면 핸들을 만들지 않아 숨겨진 창을 Owner 로 쓰지 않는다.
+        var ownerHandle = IsVisible ? new WindowInteropHelper(this).Handle : IntPtr.Zero;
+        var useOwner = CanUseAsUpdatePromptOwner(IsVisible, ownerHandle);
+
         try
         {
-            var dialog = new UpdateWindow(release) { Owner = this };
+            var dialog = new UpdateWindow(release);
+            if (useOwner)
+            {
+                dialog.Owner = this;
+            }
+            else
+            {
+                // Owner 가 없으면 CenterOwner/ShowInTaskbar=False 때문에 창이 안 보일 수 있다.
+                dialog.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+                dialog.ShowInTaskbar = true;
+                dialog.Topmost = true;
+            }
+
             var result = dialog.ShowDialog();
 
             _settings.LastUpdateCheckUtc = UpdateService.Instance.LastCheckUtc;
@@ -2888,12 +2909,25 @@ public partial class MainWindow : Window
             _settings.PendingUpdate = null;
             SaveUpdateState();
             UpdateService.Instance.Initialize(null, UpdateService.Instance.LastCheckUtc);
-            MessageBox.Show(
-                this,
-                $"업데이트 창을 열 수 없습니다.\n{ex.Message}",
-                "업데이트",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
+            var message = $"업데이트 창을 열 수 없습니다.\n{ex.Message}";
+            if (useOwner)
+            {
+                MessageBox.Show(
+                    this,
+                    message,
+                    "업데이트",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+            else
+            {
+                MessageBox.Show(
+                    message,
+                    "업데이트",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+
             return false;
         }
     }

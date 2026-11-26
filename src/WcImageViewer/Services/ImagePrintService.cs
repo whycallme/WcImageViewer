@@ -52,8 +52,18 @@ public static class ImagePrintService
         var portrait = PrintLayoutCalculator.GetPaperSizeDip(options.Paper, PrintOrientation.Portrait);
         PageMediaSizeName mediaName = options.Paper switch
         {
+            PrintPaperSize.A0 => PageMediaSizeName.ISOA0,
+            PrintPaperSize.A1 => PageMediaSizeName.ISOA1,
+            PrintPaperSize.A2 => PageMediaSizeName.ISOA2,
+            PrintPaperSize.A3 => PageMediaSizeName.ISOA3,
             PrintPaperSize.A4 => PageMediaSizeName.ISOA4,
             PrintPaperSize.A5 => PageMediaSizeName.ISOA5,
+            PrintPaperSize.A6 => PageMediaSizeName.ISOA6,
+            PrintPaperSize.B4 => PageMediaSizeName.ISOB4,
+            // ISOB5 / ISOB6 are not defined in System.Printing.PageMediaSizeName;
+            // ISOB5Extra (B5) and JISB6 (B6) are the available equivalents.
+            PrintPaperSize.B5 => PageMediaSizeName.ISOB5Extra,
+            PrintPaperSize.B6 => PageMediaSizeName.JISB6,
             PrintPaperSize.Letter => PageMediaSizeName.NorthAmericaLetter,
             PrintPaperSize.Legal => PageMediaSizeName.NorthAmericaLegal,
             _ => PageMediaSizeName.ISOA4,

@@ -2,7 +2,7 @@ using System.Windows;
 
 namespace WcImageViewer.Services;
 
-public enum PrintPaperSize { A4, A5, Letter, Legal }
+public enum PrintPaperSize { A0, A1, A2, A3, A4, A5, A6, B4, B5, B6, Letter, Legal }
 
 public enum PrintOrientation { Portrait, Landscape }
 
@@ -24,8 +24,16 @@ public static class PrintLayoutCalculator
         double widthMm, heightMm;
         switch (paper)
         {
+            case PrintPaperSize.A0: widthMm = 841; heightMm = 1189; break;
+            case PrintPaperSize.A1: widthMm = 594; heightMm = 841; break;
+            case PrintPaperSize.A2: widthMm = 420; heightMm = 594; break;
+            case PrintPaperSize.A3: widthMm = 297; heightMm = 420; break;
             case PrintPaperSize.A4: widthMm = 210; heightMm = 297; break;
             case PrintPaperSize.A5: widthMm = 148; heightMm = 210; break;
+            case PrintPaperSize.A6: widthMm = 105; heightMm = 148; break;
+            case PrintPaperSize.B4: widthMm = 250; heightMm = 353; break;
+            case PrintPaperSize.B5: widthMm = 176; heightMm = 250; break;
+            case PrintPaperSize.B6: widthMm = 125; heightMm = 176; break;
             case PrintPaperSize.Letter: widthMm = 215.9; heightMm = 279.4; break;
             case PrintPaperSize.Legal: widthMm = 215.9; heightMm = 355.6; break;
             default: widthMm = 210; heightMm = 297; break;

@@ -2,7 +2,7 @@
 
 Windows용 가볍고 빠른 이미지 뷰어입니다. 폴더와 압축파일(ZIP/CBZ, 7Z/CB7, RAR/CBR)을 열면 첫 이미지가 바로 표시되며, 설치 없이 실행할 수 있습니다.
 
-최신 버전은 **v1.4.0**입니다. "다른 이름으로 저장" 대화창이 추가되어 저장 형식·품질·애니메이션 옵션을 선택할 수 있습니다. 현재 이미지를 인쇄하는 인쇄 대화창(Ctrl+P)이 추가되었습니다. updater는 앱 exe에 내장되어 배포 폴더에는 `WcImageViewer.exe` 하나만 남습니다. 변경 내역은 [릴리즈 페이지](https://github.com/whycallme/WcImageViewer/releases)와 [docs/changelog.md](docs/changelog.md)에서 볼 수 있습니다.
+최신 버전은 **v1.4.1**입니다. "다른 이름으로 저장" 대화창이 추가되어 저장 형식·품질·애니메이션 옵션을 선택할 수 있습니다. 현재 이미지를 인쇄하는 인쇄 대화창(Ctrl+P)이 추가되었습니다. updater는 앱 exe에 내장되어 배포 폴더에는 `WcImageViewer.exe` 하나만 남습니다. 리스트뷰 창에 최소화·최대화 버튼과 인쇄 아이콘이 추가되었고, 인쇄 대화창에서 A0~A6·B4~B6 등 더 많은 용지를 선택할 수 있습니다. 변경 내역은 [릴리즈 페이지](https://github.com/whycallme/WcImageViewer/releases)와 [docs/changelog.md](docs/changelog.md)에서 볼 수 있습니다.
 
 ## 다운로드
 
