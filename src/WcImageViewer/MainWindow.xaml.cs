@@ -1917,7 +1917,8 @@ public partial class MainWindow : Window
         }
 
         var editor = _settings.EditorPath;
-        if (string.IsNullOrWhiteSpace(editor) || !File.Exists(editor))
+        var isBareName = editor.IndexOfAny(new[] { '\\', '/', ':' }) < 0;
+        if (string.IsNullOrWhiteSpace(editor) || (!isBareName && !File.Exists(editor)))
         {
             MessageBox.Show(
                 this,

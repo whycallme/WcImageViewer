@@ -120,7 +120,7 @@ public static class ShortcutService
         new HashSet<string>(StringComparer.Ordinal) { "ParentFolder" };
 
     private static readonly IReadOnlySet<string> ListUnavailable =
-        new HashSet<string>(StringComparer.Ordinal) { "CloseImage", "WindowFit", "Thumbnails", "Edit" };
+        new HashSet<string>(StringComparer.Ordinal) { "CloseImage", "WindowFit", "Thumbnails" };
 
     public static bool IsUnavailableIn(string actionId, Screen screen)
     {

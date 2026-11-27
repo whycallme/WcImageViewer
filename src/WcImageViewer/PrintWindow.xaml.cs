@@ -11,12 +11,22 @@ namespace WcImageViewer;
 
 public partial class PrintWindow : Window
 {
-    private readonly BitmapSource _image;
+    private readonly IReadOnlyList<BitmapSource> _images;
+    private int _pageIndex;
 
     public PrintWindow(BitmapSource image, string documentName)
+        : this(new[] { image ?? throw new ArgumentNullException(nameof(image)) }, documentName)
     {
-        ArgumentNullException.ThrowIfNull(image);
-        _image = image;
+    }
+
+    public PrintWindow(IReadOnlyList<BitmapSource> images, string documentName)
+    {
+        ArgumentNullException.ThrowIfNull(images);
+        if (images.Count == 0)
+        {
+            throw new ArgumentException("인쇄할 이미지가 없습니다.", nameof(images));
+        }
+        _images = images;
 
         InitializeComponent();
         SourceInitialized += (_, _) => WindowCornerService.Apply(this);
@@ -27,8 +37,23 @@ public partial class PrintWindow : Window
             {
                 Close();
                 e.Handled = true;
+                return;
+            }
+
+            var inTextBox = e.OriginalSource is TextBox;
+            if (e.Key == Key.PageDown || (e.Key == Key.Right && !inTextBox))
+            {
+                GoToPage(_pageIndex + 1);
+                e.Handled = true;
+            }
+            else if (e.Key == Key.PageUp || (e.Key == Key.Left && !inTextBox))
+            {
+                GoToPage(_pageIndex - 1);
+                e.Handled = true;
             }
         };
+
+        PreviewBorder.MouseWheel += (_, e) => GoToPage(_pageIndex + (e.Delta < 0 ? 1 : -1));
 
         DocumentNameText.Text = documentName;
 
@@ -52,6 +77,7 @@ public partial class PrintWindow : Window
 
         Loaded += (_, _) => Refresh();
 
+        UpdatePageNav();
         Refresh();
     }
 
@@ -138,7 +164,8 @@ public partial class PrintWindow : Window
 
     private void DrawPreview(PrintJobOptions options)
     {
-        var layout = ImagePrintService.CalculateLayout(_image, options);
+        var current = _images[_pageIndex];
+        var layout = ImagePrintService.CalculateLayout(current, options);
 
         double areaWidth = PreviewBorder.ActualWidth - 16;
         double areaHeight = PreviewBorder.ActualHeight - 16;
@@ -193,7 +220,7 @@ public partial class PrintWindow : Window
         var imageRect = layout.ImageRectDip;
         var img = new Image
         {
-            Source = _image,
+            Source = current,
             Stretch = Stretch.Fill,
             Width = imageRect.Width * scale,
             Height = imageRect.Height * scale
@@ -211,6 +238,25 @@ public partial class PrintWindow : Window
         PreviewCanvas.Children.Add(img);
     }
 
+    private void GoToPage(int index)
+    {
+        _pageIndex = Math.Clamp(index, 0, _images.Count - 1);
+        UpdatePageNav();
+        Refresh();
+    }
+
+    private void UpdatePageNav()
+    {
+        PageNavPanel.Visibility = _images.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
+        PageIndicatorText.Text = $"{_pageIndex + 1} / {_images.Count}";
+        PrevPageButton.IsEnabled = _pageIndex > 0;
+        NextPageButton.IsEnabled = _pageIndex < _images.Count - 1;
+    }
+
+    private void OnPrevPageClick(object sender, RoutedEventArgs e) => GoToPage(_pageIndex - 1);
+
+    private void OnNextPageClick(object sender, RoutedEventArgs e) => GoToPage(_pageIndex + 1);
+
     private void OnPrintClick(object sender, RoutedEventArgs e)
     {
         var options = BuildOptions(out _);
@@ -222,7 +268,7 @@ public partial class PrintWindow : Window
         Cursor = Cursors.Wait;
         try
         {
-            ImagePrintService.Print(_image, options);
+            ImagePrintService.PrintMany(_images, options);
             DialogResult = true;
         }
         catch (Exception ex)

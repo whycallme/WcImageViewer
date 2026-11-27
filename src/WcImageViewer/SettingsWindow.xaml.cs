@@ -595,6 +595,11 @@ public partial class SettingsWindow : Window
         }
     }
 
+    private void OnSelectPaintClick(object sender, RoutedEventArgs e)
+    {
+        EditorPathBox.Text = "mspaint.exe";
+    }
+
     private void OnSelectAllImagesClick(object sender, RoutedEventArgs e)
     {
         SetExtensionChecks(FileAssociationService.ImageExtensions, true);

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -1657,6 +1658,7 @@ public partial class ListViewWindow : Window
         AddItem("삭제", "Delete");
         AddItem("새 폴더", "NewFolder");
         menu.Items.Add(new Separator());
+        AddItem("편집 앱으로 열기", "Edit");
         AddItem("다른 이름으로 저장", "SaveAs");
         AddItem("인쇄", "Print");
         AddItem("새로 고침", "Refresh");
@@ -1888,9 +1890,11 @@ public partial class ListViewWindow : Window
             case "Slideshow":
                 SlideshowButton_Click(this, new RoutedEventArgs());
                 break;
+            case "Edit":
+                OpenSelectedInEditor();
+                break;
             case "CloseImage":
             case "Thumbnails":
-            case "Edit":
             case "WindowFit":
             default:
                 break;
@@ -1999,26 +2003,94 @@ public partial class ListViewWindow : Window
         }
     }
 
-    private void PrintSelectedImage()
+    private void OpenSelectedInEditor()
     {
-        var files = thumbList.SelectedPaths.ToList();
-        if (files.Count != 1)
+        var path = thumbList.SelectedPaths.FirstOrDefault(p => !Directory.Exists(p));
+        if (path == null)
         {
-            ShowNotice("인쇄할 이미지를 하나만 선택하세요.");
+            ShowNotice("편집 앱으로 열 이미지를 선택하세요.");
             return;
         }
-        var src = files[0];
-        if (Directory.Exists(src)) return;
+        if (!File.Exists(path))
+        {
+            ShowNotice("파일을 찾을 수 없습니다.");
+            return;
+        }
+
+        var editor = _settings.EditorPath;
+        var isBareName = editor.IndexOfAny(new[] { '\\', '/', ':' }) < 0;
+        if (string.IsNullOrWhiteSpace(editor) || (!isBareName && !File.Exists(editor)))
+        {
+            MessageBox.Show(
+                this,
+                "설정에서 편집 앱을 선택해 주세요.",
+                "편집 앱",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
         try
         {
-            using var doc = ImageLoader.LoadDocument(src);
-            var dialog = new PrintWindow(doc.Image, Path.GetFileName(src)) { Owner = this };
-            dialog.ShowDialog();
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = editor,
+                Arguments = $"\"{path}\"",
+                UseShellExecute = true
+            });
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or FileNotFoundException)
         {
-            MessageBox.Show(this, $"파일을 열 수 없습니다.\n{ex.Message}", "인쇄", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(
+                this,
+                $"편집 앱을 실행할 수 없습니다.\n{ex.Message}",
+                "편집 앱",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
         }
+    }
+
+    private void PrintSelectedImage()
+    {
+        var files = thumbList.SelectedPaths.Where(p => !Directory.Exists(p)).ToList();
+        if (files.Count == 0)
+        {
+            ShowNotice("인쇄할 이미지를 선택하세요.");
+            return;
+        }
+
+        var images = new List<BitmapSource>();
+        Exception? lastError = null;
+        foreach (var src in files)
+        {
+            try
+            {
+                using var doc = ImageLoader.LoadDocument(src);
+                var image = doc.Image;
+                if (!image.IsFrozen)
+                {
+                    image = image.Clone();
+                    image.Freeze();
+                }
+                images.Add(image);
+            }
+            catch (Exception ex)
+            {
+                lastError = ex;
+            }
+        }
+
+        if (images.Count == 0)
+        {
+            MessageBox.Show(this, $"파일을 열 수 없습니다.\n{lastError?.Message}", "인쇄", MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+
+        var documentName = files.Count == 1
+            ? Path.GetFileName(files[0])
+            : $"{Path.GetFileName(files[0])} 외 {files.Count - 1}개";
+        var dialog = new PrintWindow(images, documentName) { Owner = this };
+        dialog.ShowDialog();
     }
 
     private void MoveFocusInList(int direction)

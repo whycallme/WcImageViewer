@@ -1,4 +1,6 @@
 using System.Windows;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using WcImageViewer.Services;
 
 namespace WcImageViewer.Tests;
@@ -161,5 +163,14 @@ public class PrintLayoutTests
         var layout = PrintLayoutCalculator.Calculate(PrintPaperSize.A4, PrintOrientation.Portrait, new PrintMargins(10, 10, 10, 10), PrintFitMode.FitToPage, natural);
         Assert.Equal(layout.PrintableAreaDip.Width, layout.ImageRectDip.Width, 1);
         Assert.Equal(718.1, layout.PrintableAreaDip.Width, 1);
+    }
+
+    [Fact]
+    public void CalculateLayout_NonSquareDpi_KeepsPixelAspect()
+    {
+        var image = BitmapSource.Create(100, 100, 72, 96, PixelFormats.Bgr24, null, new byte[100 * 3 * 100], 100 * 3);
+        var options = new PrintJobOptions("p", PrintPaperSize.A4, PrintOrientation.Portrait, PrintFitMode.FitToPage, new PrintMargins(10, 10, 10, 10), 1);
+        var layout = ImagePrintService.CalculateLayout(image, options);
+        Assert.Equal(layout.ImageRectDip.Width, layout.ImageRectDip.Height, 3);
     }
 }

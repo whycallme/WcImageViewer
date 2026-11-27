@@ -329,6 +329,7 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="편집 앱"
                                    Foreground="{DynamicResource TextBrush}"
@@ -347,6 +348,11 @@
                                 Grid.Column="2"
                                 Margin="6,0,0,0"
                                 Click="OnBrowseEditorClick" />
+                        <Button Content="그림판"
+                                Grid.Column="3"
+                                Margin="6,0,0,0"
+                                Click="OnSelectPaintClick"
+                                ToolTip="Windows 기본 그림판(mspaint.exe) 사용" />
                     </Grid>
 
                     <CheckBox x:Name="ConfirmDeleteCheck"

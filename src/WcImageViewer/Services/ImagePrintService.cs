@@ -1,6 +1,9 @@
 using System.Linq;
 using System.Printing;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Documents;
+using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -38,13 +41,15 @@ public static class ImagePrintService
 
     public static PrintPageLayout CalculateLayout(BitmapSource image, PrintJobOptions options)
     {
-        var natural = PrintLayoutCalculator.GetNaturalSizeDip(image.PixelWidth, image.PixelHeight, image.DpiX, image.DpiY);
+        // X/Y DPI 가 다른 이미지도 픽셀 비율을 유지하도록 DpiX 하나로 양축 환산
+        var dpi = image.DpiX;
+        var natural = PrintLayoutCalculator.GetNaturalSizeDip(image.PixelWidth, image.PixelHeight, dpi, dpi);
         return PrintLayoutCalculator.Calculate(options.Paper, options.Orientation, options.MarginsMm, options.FitMode, natural);
     }
 
-    public static void Print(BitmapSource image, PrintJobOptions options)
+    private static (PrintQueue queue, PrintTicket ticket) BuildTicket(PrintJobOptions options)
     {
-        ArgumentNullException.ThrowIfNull(image);
+        ArgumentNullException.ThrowIfNull(options);
 
         var queue = new LocalPrintServer().GetPrintQueue(options.PrinterName);
         var ticket = queue.DefaultPrintTicket.Clone();
@@ -73,17 +78,75 @@ public static class ImagePrintService
         ticket.PageOrientation = options.Orientation == PrintOrientation.Landscape ? PageOrientation.Landscape : PageOrientation.Portrait;
         ticket.CopyCount = Math.Clamp(options.Copies, 1, 99);
 
-        var layout = CalculateLayout(image, options);
+        return (queue, ticket);
+    }
 
-        var visual = new DrawingVisual();
-        using (var dc = visual.RenderOpen())
+    public static void PrintMany(IReadOnlyList<BitmapSource> images, PrintJobOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(images);
+        if (images.Count == 0)
         {
-            dc.DrawRectangle(Brushes.White, null, new Rect(new Point(0, 0), layout.PageSizeDip));
-            dc.PushClip(new RectangleGeometry(layout.PrintableAreaDip));
-            dc.DrawImage(image, layout.ImageRectDip);
-            dc.Pop();
+            throw new ArgumentException("인쇄할 이미지가 없습니다.", nameof(images));
+        }
+        ArgumentNullException.ThrowIfNull(options);
+
+        var (queue, ticket) = BuildTicket(options);
+        var document = BuildDocument(images, options);
+
+        PrintQueue.CreateXpsDocumentWriter(queue).Write(document, ticket);
+    }
+
+    public static FixedDocument BuildDocument(IReadOnlyList<BitmapSource> images, PrintJobOptions options)
+    {
+        var document = new FixedDocument();
+
+        foreach (var image in images)
+        {
+            ArgumentNullException.ThrowIfNull(image);
+
+            var layout = CalculateLayout(image, options);
+            var fixedPage = new FixedPage
+            {
+                Width = layout.PageSizeDip.Width,
+                Height = layout.PageSizeDip.Height,
+            };
+
+            var canvas = new Canvas
+            {
+                Width = layout.PageSizeDip.Width,
+                Height = layout.PageSizeDip.Height,
+                Background = Brushes.White,
+                Clip = new RectangleGeometry(layout.PrintableAreaDip),
+            };
+            var picture = new Image
+            {
+                Source = ToUniqueBitmap(image),
+                Width = layout.ImageRectDip.Width,
+                Height = layout.ImageRectDip.Height,
+                Stretch = Stretch.Fill,
+            };
+            Canvas.SetLeft(picture, layout.ImageRectDip.X);
+            Canvas.SetTop(picture, layout.ImageRectDip.Y);
+            canvas.Children.Add(picture);
+            fixedPage.Children.Add(canvas);
+
+            fixedPage.Measure(layout.PageSizeDip);
+            fixedPage.Arrange(new Rect(layout.PageSizeDip));
+            fixedPage.UpdateLayout();
+
+            var pageContent = new PageContent();
+            ((IAddChild)pageContent).AddChild(fixedPage);
+            document.Pages.Add(pageContent);
         }
 
-        PrintQueue.CreateXpsDocumentWriter(queue).Write(visual, ticket);
+        return document;
+    }
+
+    private static BitmapSource ToUniqueBitmap(BitmapSource source)
+    {
+        // XPS 직렬화기가 파일에서 디코딩된 서로 다른 비트맵을 같은 리소스로 합치는 문제 회피
+        var copy = new WriteableBitmap(source);
+        copy.Freeze();
+        return copy;
     }
 }
